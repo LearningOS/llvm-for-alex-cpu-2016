@@ -95,6 +95,14 @@ class F2_4<bits<3> cond, bit annul, bit pred,
   let Inst{13-0}  = imm16{13-0};
 }
 
+class FA<bits<8> opcode, bits<24> imm,
+            dag outs, dag ins, string asmstr, list<dag> pattern>
+        : InstSP<outs, ins, asmstr, pattern> {
+
+  let Inst{31-8} = imm;
+  let Inst{7-0}  = opcode;
+}
+
 
 //===----------------------------------------------------------------------===//
 // Format #3 instruction classes in the V9
