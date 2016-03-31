@@ -69,10 +69,8 @@ static const unsigned IntRegDecoderTable[] = {
   SP::G4,  SP::G5,  SP::G6,  SP::G7,
   SP::O0,  SP::O1,  SP::O2,  SP::O3,
   SP::O4,  SP::O5,  SP::O6,  SP::O7,
-  SP::L0,  SP::L1,  SP::L2,  SP::L3,
-  SP::L4,  SP::L5,  SP::L6,  SP::L7,
-  SP::I0,  SP::I1,  SP::I2,  SP::I3,
-  SP::I4,  SP::I5,  SP::I6,  SP::I7 };
+  SP::A0,  SP::A1,  SP::A2,  SP::A3,
+  SP::A4,  SP::A5,  SP::A6,  SP::A7 };
 
 static const unsigned FPRegDecoderTable[] = {
   SP::F0,   SP::F1,   SP::F2,   SP::F3,
@@ -121,13 +119,6 @@ static const unsigned PRRegDecoderTable[] = {
   SP::TPC, SP::TNPC, SP::TSTATE, SP::TT, SP::TICK, SP::TBA, SP::PSTATE,
   SP::TL, SP::PIL, SP::CWP, SP::CANSAVE, SP::CANRESTORE, SP::CLEANWIN,
   SP::OTHERWIN, SP::WSTATE
-};
-
-static const uint16_t IntPairDecoderTable[] = {
-  SP::G0_G1, SP::G2_G3, SP::G4_G5, SP::G6_G7,
-  SP::O0_O1, SP::O2_O3, SP::O4_O5, SP::O6_O7,
-  SP::L0_L1, SP::L2_L3, SP::L4_L5, SP::L6_L7,
-  SP::I0_I1, SP::I2_I3, SP::I4_I5, SP::I6_I7,
 };
 
 static const unsigned CPRegDecoderTable[] = {
@@ -258,8 +249,6 @@ static DecodeStatus DecodeIntPairRegisterClass(MCInst &Inst, unsigned RegNo,
   if ((RegNo & 1))
     S = MCDisassembler::SoftFail;
 
-  unsigned RegisterPair = IntPairDecoderTable[RegNo/2];
-  Inst.addOperand(MCOperand::createReg(RegisterPair));
   return S;
 }
 

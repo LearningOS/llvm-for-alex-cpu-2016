@@ -36,11 +36,13 @@ ReserveAppRegisters("sparc-reserve-app-registers", cl::Hidden, cl::init(false),
 
 V9RegisterInfo::V9RegisterInfo() : V9GenRegisterInfo(SP::O7) {}
 
+static const MCPhysReg CSR_SaveList[] = { 0 };
 const MCPhysReg*
 V9RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   return CSR_SaveList;
 }
 
+static const uint32_t CSR_RegMask[] = { 0 };
 const uint32_t *
 V9RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
                                         CallingConv::ID CC) const {
@@ -55,46 +57,54 @@ V9RegisterInfo::getRTCallPreservedMask(CallingConv::ID CC) const {
 BitVector V9RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
   const V9Subtarget &Subtarget = MF.getSubtarget<V9Subtarget>();
-  // FIXME: G1 reserved for now for large imm generation by frame code.
-  Reserved.set(SP::G1);
 
-  // G1-G4 can be used in applications.
-  if (ReserveAppRegisters) {
-    Reserved.set(SP::G2);
-    Reserved.set(SP::G3);
-    Reserved.set(SP::G4);
-  }
-  // G5 is not reserved in 64 bit mode.
-  if (!Subtarget.is64Bit())
-    Reserved.set(SP::G5);
+  //Reserved.set(SP::I0);
+  //Reserved.set(SP::I1);
+  //Reserved.set(SP::I2);
+  //Reserved.set(SP::I3);
+  //Reserved.set(SP::I4);
+  //Reserved.set(SP::I5);
+//  Reserved.set(SP::I6);
+//  Reserved.set(SP::I7);
+//  Reserved.set(SP::I0_I1);
+//  Reserved.set(SP::I2_I3);
+//  Reserved.set(SP::I4_I5);
+//  Reserved.set(SP::I6_I7);
 
+  //Reserved.set(SP::G0);
+  //Reserved.set(SP::G1);
+  //Reserved.set(SP::G2);
+  //Reserved.set(SP::G3);
+  //Reserved.set(SP::G4);
+  //Reserved.set(SP::G5);
+  //Reserved.set(SP::G6);
+  //Reserved.set(SP::G7);
+
+//  Reserved.set(SP::L0);
+//  Reserved.set(SP::L1);
+//  Reserved.set(SP::L2);
+//  Reserved.set(SP::L3);
+//  Reserved.set(SP::L4);
+//  Reserved.set(SP::L5);
+//  Reserved.set(SP::L6);
+//  Reserved.set(SP::L7);
+//  Reserved.set(SP::L0_L1);
+//  Reserved.set(SP::L2_L3);
+//  Reserved.set(SP::L4_L5);
+//  Reserved.set(SP::L6_L7);
+
+  Reserved.set(SP::O0);
+  Reserved.set(SP::O1);
+  Reserved.set(SP::O2);
+  Reserved.set(SP::O3);
+  Reserved.set(SP::O4);
+  Reserved.set(SP::O5);
   Reserved.set(SP::O6);
-  Reserved.set(SP::I6);
-  Reserved.set(SP::I7);
-  Reserved.set(SP::G0);
-  Reserved.set(SP::G6);
-  Reserved.set(SP::G7);
-
-  // Also reserve the register pair aliases covering the above
-  // registers, with the same conditions.
-  Reserved.set(SP::G0_G1);
-  if (ReserveAppRegisters)
-    Reserved.set(SP::G2_G3);
-  if (ReserveAppRegisters || !Subtarget.is64Bit())
-    Reserved.set(SP::G4_G5);
-
+  Reserved.set(SP::O7);
+  Reserved.set(SP::O0_O1);
+  Reserved.set(SP::O2_O3);
+  Reserved.set(SP::O4_O5);
   Reserved.set(SP::O6_O7);
-  Reserved.set(SP::I6_I7);
-  Reserved.set(SP::G6_G7);
-
-  // Unaliased double registers are not available in non-V9 targets.
-  if (!Subtarget.isV9()) {
-    for (unsigned n = 0; n != 16; ++n) {
-      for (MCRegAliasIterator AI(SP::D16 + n, this, true); AI.isValid(); ++AI)
-        Reserved.set(*AI);
-    }
-  }
-
   return Reserved;
 }
 
@@ -214,7 +224,7 @@ V9RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 }
 
 unsigned V9RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
-  return SP::I6;
+  return SP::A6;
 }
 
 // V9 has no architectural need for stack realignment support,

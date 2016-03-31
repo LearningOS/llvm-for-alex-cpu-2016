@@ -225,7 +225,6 @@ SDNode *V9DAGToDAGISel::SelectInlineAsm(SDNode *N){
     SDValue V1 = N->getOperand(i+2);
     unsigned Reg0 = cast<RegisterSDNode>(V0)->getReg();
     unsigned Reg1 = cast<RegisterSDNode>(V1)->getReg();
-    SDValue PairedReg;
     MachineRegisterInfo &MRI = MF->getRegInfo();
 
     if (Kind == InlineAsm::Kind_RegDef ||
@@ -233,26 +232,24 @@ SDNode *V9DAGToDAGISel::SelectInlineAsm(SDNode *N){
       // Replace the two GPRs with 1 GPRPair and copy values from GPRPair to
       // the original GPRs.
 
-      unsigned GPVR = MRI.createVirtualRegister(&SP::IntPairRegClass);
-      PairedReg = CurDAG->getRegister(GPVR, MVT::v2i32);
       SDValue Chain = SDValue(N,0);
 
       SDNode *GU = N->getGluedUser();
-      SDValue RegCopy = CurDAG->getCopyFromReg(Chain, dl, GPVR, MVT::v2i32,
-                                               Chain.getValue(1));
+//      SDValue RegCopy = CurDAG->getCopyFromReg(Chain, dl, GPVR, MVT::v2i32,
+//                                               Chain.getValue(1));
 
       // Extract values from a GPRPair reg and copy to the original GPR reg.
-      SDValue Sub0 = CurDAG->getTargetExtractSubreg(SP::sub_even, dl, MVT::i32,
-                                                    RegCopy);
-      SDValue Sub1 = CurDAG->getTargetExtractSubreg(SP::sub_odd, dl, MVT::i32,
-                                                    RegCopy);
-      SDValue T0 = CurDAG->getCopyToReg(Sub0, dl, Reg0, Sub0,
-                                        RegCopy.getValue(1));
-      SDValue T1 = CurDAG->getCopyToReg(Sub1, dl, Reg1, Sub1, T0.getValue(1));
+//      SDValue Sub0 = CurDAG->getTargetExtractSubreg(SP::sub_even, dl, MVT::i32,
+//                                                    RegCopy);
+//      SDValue Sub1 = CurDAG->getTargetExtractSubreg(SP::sub_odd, dl, MVT::i32,
+//                                                    RegCopy);
+//      SDValue T0 = CurDAG->getCopyToReg(Sub0, dl, Reg0, Sub0,
+//                                        RegCopy.getValue(1));
+//      SDValue T1 = CurDAG->getCopyToReg(Sub1, dl, Reg1, Sub1, T0.getValue(1));
 
       // Update the original glue user.
       std::vector<SDValue> Ops(GU->op_begin(), GU->op_end()-1);
-      Ops.push_back(T1.getValue(1));
+//      Ops.push_back(T1.getValue(1));
       CurDAG->UpdateNodeOperands(GU, Ops);
     }
     else {
@@ -269,8 +266,8 @@ SDNode *V9DAGToDAGISel::SelectInlineAsm(SDNode *N){
           CurDAG->getMachineNode(
               TargetOpcode::REG_SEQUENCE, dl, MVT::v2i32,
               {
-                  CurDAG->getTargetConstant(SP::IntPairRegClassID, dl,
-                                            MVT::i32),
+//                  CurDAG->getTargetConstant(SP::IntPairRegClassID, dl,
+//                                            MVT::i32),
                   T0,
                   CurDAG->getTargetConstant(SP::sub_even, dl, MVT::i32),
                   T1,
@@ -280,31 +277,13 @@ SDNode *V9DAGToDAGISel::SelectInlineAsm(SDNode *N){
 
       // Copy REG_SEQ into a GPRPair-typed VR and replace the original two
       // i32 VRs of inline asm with it.
-      unsigned GPVR = MRI.createVirtualRegister(&SP::IntPairRegClass);
-      PairedReg = CurDAG->getRegister(GPVR, MVT::v2i32);
-      Chain = CurDAG->getCopyToReg(T1, dl, GPVR, Pair, T1.getValue(1));
-
-      AsmNodeOperands[InlineAsm::Op_InputChain] = Chain;
-      Glue = Chain.getValue(1);
+//      Chain = CurDAG->getCopyToReg(T1, dl, GPVR, Pair, T1.getValue(1));
+//
+//      AsmNodeOperands[InlineAsm::Op_InputChain] = Chain;
+//      Glue = Chain.getValue(1);
     }
 
     Changed = true;
-
-    if(PairedReg.getNode()) {
-      OpChanged[OpChanged.size() -1 ] = true;
-      Flag = InlineAsm::getFlagWord(Kind, 1 /* RegNum*/);
-      if (IsTiedToChangedOp)
-        Flag = InlineAsm::getFlagWordForMatchingOp(Flag, DefIdx);
-      else
-        Flag = InlineAsm::getFlagWordForRegClass(Flag, SP::IntPairRegClassID);
-      // Replace the current flag.
-      AsmNodeOperands[AsmNodeOperands.size() -1] = CurDAG->getTargetConstant(
-          Flag, dl, MVT::i32);
-      // Add the new register node and skip the original two GPRs.
-      AsmNodeOperands.push_back(PairedReg);
-      // Skip the next two GPRs.
-      i += 2;
-    }
   }
 
   if (Glue.getNode())

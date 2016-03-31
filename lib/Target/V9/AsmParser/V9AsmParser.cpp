@@ -103,10 +103,8 @@ public:
     V9::G4, V9::G5, V9::G6, V9::G7,
     V9::O0, V9::O1, V9::O2, V9::O3,
     V9::O4, V9::O5, V9::O6, V9::O7,
-    V9::L0, V9::L1, V9::L2, V9::L3,
-    V9::L4, V9::L5, V9::L6, V9::L7,
-    V9::I0, V9::I1, V9::I2, V9::I3,
-    V9::I4, V9::I5, V9::I6, V9::I7 };
+    V9::A0, V9::A1, V9::A2, V9::A3,
+    V9::A4, V9::A5, V9::A6, V9::A7 };
 
   static const MCPhysReg FloatRegs[32] = {
     V9::F0,  V9::F1,  V9::F2,  V9::F3,
@@ -143,12 +141,6 @@ public:
     SP::ASR20, SP::ASR21, SP::ASR22, SP::ASR23,
     SP::ASR24, SP::ASR25, SP::ASR26, SP::ASR27,
     SP::ASR28, SP::ASR29, SP::ASR30, SP::ASR31};
-
-  static const MCPhysReg IntPairRegs[] = {
-    V9::G0_G1, V9::G2_G3, V9::G4_G5, V9::G6_G7,
-    V9::O0_O1, V9::O2_O3, V9::O4_O5, V9::O6_O7,
-    V9::L0_L1, V9::L2_L3, V9::L4_L5, V9::L6_L7,
-    V9::I0_I1, V9::I2_I3, V9::I4_I5, V9::I6_I7};
 
   static const MCPhysReg CoprocRegs[32] = {
     V9::C0,  V9::C1,  V9::C2,  V9::C3,
@@ -364,25 +356,6 @@ public:
     Op->StartLoc = S;
     Op->EndLoc = E;
     return Op;
-  }
-
-  static bool MorphToIntPairReg(V9Operand &Op) {
-    unsigned Reg = Op.getReg();
-    assert(Op.Reg.Kind == rk_IntReg);
-    unsigned regIdx = 32;
-    if (Reg >= V9::G0 && Reg <= V9::G7)
-      regIdx = Reg - V9::G0;
-    else if (Reg >= V9::O0 && Reg <= V9::O7)
-      regIdx = Reg - V9::O0 + 8;
-    else if (Reg >= V9::L0 && Reg <= V9::L7)
-      regIdx = Reg - V9::L0 + 16;
-    else if (Reg >= V9::I0 && Reg <= V9::I7)
-      regIdx = Reg - V9::I0 + 24;
-    if (regIdx % 2 || regIdx > 31)
-      return false;
-    Op.Reg.RegNum = IntPairRegs[regIdx / 2];
-    Op.Reg.Kind = rk_IntPairReg;
-    return true;
   }
 
   static bool MorphToDoubleReg(V9Operand &Op) {
@@ -944,7 +917,7 @@ bool V9AsmParser::matchRegisterName(const AsmToken &Tok,
 
     // %fp
     if (name.equals("fp")) {
-      RegNo = V9::I6;
+      RegNo = V9::A6;
       RegKind = V9Operand::rk_IntReg;
       return true;
     }
@@ -1291,10 +1264,7 @@ unsigned V9AsmParser::validateTargetOperandClass(MCParsedAsmOperand &GOp,
       break;
     }
   }
-  if (Op.isIntReg() && Kind == MCK_IntPair) {
-    if (V9Operand::MorphToIntPairReg(Op))
-      return MCTargetAsmParser::Match_Success;
-  }
+
   if (Op.isCoprocReg() && Kind == MCK_CoprocPair) {
      if (V9Operand::MorphToCoprocPairReg(Op))
        return MCTargetAsmParser::Match_Success;

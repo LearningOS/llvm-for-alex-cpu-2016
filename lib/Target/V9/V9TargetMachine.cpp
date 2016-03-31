@@ -26,30 +26,8 @@ extern "C" void LLVMInitializeV9Target() {
 }
 
 static std::string computeDataLayout(const Triple &T, bool is64Bit) {
-  // V9 is typically big endian, but some are little.
-  std::string Ret = T.getArch() == Triple::sparcel ? "e" : "E";
-  Ret += "-m:e";
-
-  // Some ABIs have 32bit pointers.
-  if (!is64Bit)
-    Ret += "-p:32:32";
-
-  // Alignments for 64 bit integers.
-  Ret += "-i64:64";
-
-  // On V9V9 128 floats are aligned to 128 bits, on others only to 64.
-  // On V9V9 registers can hold 64 or 32 bits, on others only 32.
-  if (is64Bit)
-    Ret += "-n32:64";
-  else
-    Ret += "-f128:64-n32";
-
-  if (is64Bit)
-    Ret += "-S128";
-  else
-    Ret += "-S64";
-
-  return Ret;
+    std::string Ret = "e-m:e-p:32:32-f128:64-n32-S64";
+    return Ret;
 }
 
 /// V9TargetMachine ctor - Create an ILP32 architecture model

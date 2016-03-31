@@ -157,7 +157,7 @@ void V9FrameLowering::emitPrologue(MachineFunction &MF,
   emitSPAdjustment(MF, MBB, MBBI, -NumBytes, SAVErr, SAVEri);
 
   MachineModuleInfo &MMI = MF.getMMI();
-  unsigned regFP = RegInfo.getDwarfRegNum(SP::I6, true);
+  unsigned regFP = RegInfo.getDwarfRegNum(SP::A6, true);
 
   // Emit ".cfi_def_cfa_register 30".
   unsigned CFIIndex =
@@ -170,7 +170,7 @@ void V9FrameLowering::emitPrologue(MachineFunction &MF,
   BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
       .addCFIIndex(CFIIndex);
 
-  unsigned regInRA = RegInfo.getDwarfRegNum(SP::I7, true);
+  unsigned regInRA = RegInfo.getDwarfRegNum(SP::A7, true);
   unsigned regOutRA = RegInfo.getDwarfRegNum(SP::O7, true);
   // Emit ".cfi_register 15, 31".
   CFIIndex = MMI.addFrameInst(
@@ -290,11 +290,7 @@ int V9FrameLowering::getFrameIndexReference(const MachineFunction &MF, int FI,
 static bool LLVM_ATTRIBUTE_UNUSED verifyLeafProcRegUse(MachineRegisterInfo *MRI)
 {
 
-  for (unsigned reg = SP::I0; reg <= SP::I7; ++reg)
-    if (!MRI->reg_nodbg_empty(reg))
-      return false;
-
-  for (unsigned reg = SP::L0; reg <= SP::L7; ++reg)
+  for (unsigned reg = SP::A0; reg <= SP::A7; ++reg)
     if (!MRI->reg_nodbg_empty(reg))
       return false;
 
@@ -308,7 +304,6 @@ bool V9FrameLowering::isLeafProc(MachineFunction &MF) const
   MachineFrameInfo    *MFI = MF.getFrameInfo();
 
   return !(MFI->hasCalls()                 // has calls
-           || !MRI.reg_nodbg_empty(SP::L0) // Too many registers needed
            || !MRI.reg_nodbg_empty(SP::O6) // %SP is used
            || hasFP(MF));                  // need %FP
 }
@@ -316,40 +311,40 @@ bool V9FrameLowering::isLeafProc(MachineFunction &MF) const
 void V9FrameLowering::remapRegsForLeafProc(MachineFunction &MF) const {
   MachineRegisterInfo &MRI = MF.getRegInfo();
   // Remap %i[0-7] to %o[0-7].
-  for (unsigned reg = SP::I0; reg <= SP::I7; ++reg) {
+  for (unsigned reg = SP::A0; reg <= SP::A7; ++reg) {
     if (MRI.reg_nodbg_empty(reg))
       continue;
 
-    unsigned mapped_reg = reg - SP::I0 + SP::O0;
+    unsigned mapped_reg = reg - SP::A0 + SP::O0;
     assert(MRI.reg_nodbg_empty(mapped_reg));
 
     // Replace I register with O register.
     MRI.replaceRegWith(reg, mapped_reg);
 
     // Also replace register pair super-registers.
-    if ((reg - SP::I0) % 2 == 0) {
-      unsigned preg = (reg - SP::I0) / 2 + SP::I0_I1;
-      unsigned mapped_preg = preg - SP::I0_I1 + SP::O0_O1;
-      MRI.replaceRegWith(preg, mapped_preg);
-    }
+//    if ((reg - SP::A0) % 2 == 0) {
+//      unsigned preg = (reg - SP::A0) / 2 + SP::I0_I1;
+//      unsigned mapped_preg = preg - SP::I0_I1 + SP::O0_O1;
+//      MRI.replaceRegWith(preg, mapped_preg);
+//    }
   }
 
   // Rewrite MBB's Live-ins.
-  for (MachineFunction::iterator MBB = MF.begin(), E = MF.end();
-       MBB != E; ++MBB) {
-    for (unsigned reg = SP::I0_I1; reg <= SP::I6_I7; ++reg) {
-      if (!MBB->isLiveIn(reg))
-        continue;
-      MBB->removeLiveIn(reg);
-      MBB->addLiveIn(reg - SP::I0_I1 + SP::O0_O1);
-    }
-    for (unsigned reg = SP::I0; reg <= SP::I7; ++reg) {
-      if (!MBB->isLiveIn(reg))
-        continue;
-      MBB->removeLiveIn(reg);
-      MBB->addLiveIn(reg - SP::I0 + SP::O0);
-    }
-  }
+//  for (MachineFunction::iterator MBB = MF.begin(), E = MF.end();
+//       MBB != E; ++MBB) {
+//    for (unsigned reg = SP::I0_I1; reg <= SP::I6_I7; ++reg) {
+//      if (!MBB->isLiveIn(reg))
+//        continue;
+//      MBB->removeLiveIn(reg);
+//      MBB->addLiveIn(reg - SP::I0_I1 + SP::O0_O1);
+//    }
+//    for (unsigned reg = SP::I0; reg <= SP::I7; ++reg) {
+//      if (!MBB->isLiveIn(reg))
+//        continue;
+//      MBB->removeLiveIn(reg);
+//      MBB->addLiveIn(reg - SP::I0 + SP::O0);
+//    }
+//  }
 
   assert(verifyLeafProcRegUse(&MRI));
 #ifdef XDEBUG

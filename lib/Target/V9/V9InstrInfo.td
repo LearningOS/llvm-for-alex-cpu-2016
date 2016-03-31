@@ -436,15 +436,11 @@ let usesCustomInserter = 1, Uses = [FCC0] in {
 
 // Section B.1 - Load Integer Instructions, p. 90
 let DecoderMethod = "DecodeLoadInt" in {
-  defm LDSB : LoadA<"ldsb", 0b001001, 0b011001, sextloadi8,  IntRegs, i32>;
-  defm LDSH : LoadA<"ldsh", 0b001010, 0b011010, sextloadi16, IntRegs, i32>;
-  defm LDUB : LoadA<"ldub", 0b000001, 0b010001, zextloadi8,  IntRegs, i32>;
-  defm LDUH : LoadA<"lduh", 0b000010, 0b010010, zextloadi16, IntRegs, i32>;
-  defm LD   : LoadA<"ld",   0b000000, 0b010000, load,        IntRegs, i32>;
+  defm LDSH : LoadA<"llsa", 0b001010, 0b011010, sextloadi16, IntRegs, i32>;
+  defm LDUB : LoadA<"llba", 0b000001, 0b010001, zextloadi8,  IntRegs, i32>;
+  defm LDUH : LoadA<"llha", 0b000010, 0b010010, zextloadi16, IntRegs, i32>;
+  defm LD   : LoadA<"lla",  0b000000, 0b010000, load,        IntRegs, i32>;
 }
-
-let DecoderMethod = "DecodeLoadIntPair" in
-  defm LDD : LoadA<"ldd", 0b000011, 0b010011, load, IntPair, v2i32>;
 
 // Section B.2 - Load Floating-point Instructions, p. 92
 let DecoderMethod = "DecodeLoadFP" in {
@@ -497,9 +493,6 @@ let DecoderMethod = "DecodeStoreInt" in {
   defm STH   : StoreA<"sth", 0b000110, 0b010110, truncstorei16, IntRegs, i32>;
   defm ST    : StoreA<"st",  0b000100, 0b010100, store,         IntRegs, i32>;
 }
-
-let DecoderMethod = "DecodeStoreIntPair" in
-  defm STD   : StoreA<"std", 0b000111, 0b010111, store, IntPair, v2i32>;
 
 // Section B.5 - Store Floating-point Instructions, p. 97
 let DecoderMethod = "DecodeStoreFP" in {
@@ -1350,33 +1343,6 @@ let hasSideEffects = 1 in {
                    Requires<[HasHardQuad]>;
 }
 
-// Floating point conditional move instrucitons with %fcc0-%fcc3.
-let Predicates = [HasV9] in {
-  let Constraints = "$f = $rd", intcc = 0 in {
-    def V9MOVFCCrr
-      : F4_1<0b101100, (outs IntRegs:$rd),
-             (ins FCCRegs:$cc, IntRegs:$rs2, IntRegs:$f, CCOp:$cond),
-             "mov$cond $cc, $rs2, $rd", []>;
-    def V9MOVFCCri
-      : F4_2<0b101100, (outs IntRegs:$rd),
-             (ins FCCRegs:$cc, i32imm:$simm11, IntRegs:$f, CCOp:$cond),
-             "mov$cond $cc, $simm11, $rd", []>;
-    def V9FMOVS_FCC
-      : F4_3<0b110101, 0b000001, (outs FPRegs:$rd),
-             (ins FCCRegs:$opf_cc, FPRegs:$rs2, FPRegs:$f, CCOp:$cond),
-             "fmovs$cond $opf_cc, $rs2, $rd", []>;
-    def V9FMOVD_FCC
-      : F4_3<0b110101, 0b000010, (outs DFPRegs:$rd),
-             (ins FCCRegs:$opf_cc, DFPRegs:$rs2, DFPRegs:$f, CCOp:$cond),
-             "fmovd$cond $opf_cc, $rs2, $rd", []>;
-    def V9FMOVQ_FCC
-      : F4_3<0b110101, 0b000011, (outs QFPRegs:$rd),
-             (ins FCCRegs:$opf_cc, QFPRegs:$rs2, QFPRegs:$f, CCOp:$cond),
-             "fmovq$cond $opf_cc, $rs2, $rd", []>,
-             Requires<[HasHardQuad]>;
-  } // Constraints = "$f = $rd", ...
-} // let Predicates = [hasV9]
-
 
 // POPCrr - This does a ctpop of a 64-bit register.  As such, we have to clear
 // the top 32-bits before using it.  To do this clearing, we use a SRLri X,0.
@@ -1391,20 +1357,6 @@ let Predicates = [HasV9], hasSideEffects = 1, rd = 0, rs1 = 0b01111 in
  def MEMBARi : F3_2<2, 0b101000, (outs), (ins simm13Op:$simm13),
                     "membar $simm13", []>;
 
-// TODO: Should add a CASArr variant. In fact, the CAS instruction,
-// unlike other instructions, only comes in a form which requires an
-// ASI be provided. The ASI value hardcoded here is ASI_PRIMARY, the
-// default unprivileged ASI for V9V9.  (Also of note: some modern
-// V9V8 implementations provide CASA as an extension, but require
-// the use of V9V8's default ASI, 0xA ("User Data") instead.)
-let Predicates = [HasV9], Constraints = "$swap = $rd", asi = 0b10000000 in
-  def CASrr: F3_1_asi<3, 0b111100,
-                (outs IntRegs:$rd), (ins IntRegs:$rs1, IntRegs:$rs2,
-                                     IntRegs:$swap),
-                 "cas [$rs1], $rs2, $rd",
-                 [(set i32:$rd,
-                     (atomic_cmp_swap iPTR:$rs1, i32:$rs2, i32:$swap))]>;
-
 let Defs = [ICC] in {
 defm TADDCC   : F3_12np<"taddcc",   0b100000>;
 defm TSUBCC   : F3_12np<"tsubcc",   0b100001>;
@@ -1413,25 +1365,6 @@ let hasSideEffects = 1 in {
   defm TADDCCTV : F3_12np<"taddcctv", 0b100010>;
   defm TSUBCCTV : F3_12np<"tsubcctv", 0b100011>;
 }
-}
-
-
-// Section A.43 - Read Privileged Register Instructions
-let Predicates = [HasV9] in {
-let rs2 = 0 in
-  def RDPR : F3_1<2, 0b101010,
-                 (outs IntRegs:$rd), (ins PRRegs:$rs1),
-                 "rdpr $rs1, $rd", []>;
-}
-
-// Section A.62 - Write Privileged Register Instructions
-let Predicates = [HasV9] in {
-  def WRPRrr : F3_1<2, 0b110010,
-                   (outs PRRegs:$rd), (ins IntRegs:$rs1, IntRegs:$rs2),
-                   "wrpr $rs1, $rs2, $rd", []>;
-  def WRPRri : F3_2<2, 0b110010,
-                   (outs PRRegs:$rd), (ins IntRegs:$rs1, simm13Op:$simm13),
-                   "wrpr $rs1, $simm13, $rd", []>;
 }
 
 //===----------------------------------------------------------------------===//
@@ -1507,11 +1440,6 @@ def : Pat<(i32 (atomic_load ADDRri:$src)), (LDri ADDRri:$src)>;
 def : Pat<(atomic_store ADDRrr:$dst, i32:$val), (STrr ADDRrr:$dst, $val)>;
 def : Pat<(atomic_store ADDRri:$dst, i32:$val), (STri ADDRri:$dst, $val)>;
 
-// extract_vector
-def : Pat<(extractelt (v2i32 IntPair:$Rn), 0),
-          (i32 (EXTRACT_SUBREG IntPair:$Rn, sub_even))>;
-def : Pat<(extractelt (v2i32 IntPair:$Rn), 1),
-          (i32 (EXTRACT_SUBREG IntPair:$Rn, sub_odd))>;
 
 // build_vector
 def : Pat<(build_vector (i32 IntRegs:$a1), (i32 IntRegs:$a2)),
@@ -1519,7 +1447,4 @@ def : Pat<(build_vector (i32 IntRegs:$a1), (i32 IntRegs:$a2)),
 	    (INSERT_SUBREG (v2i32 (IMPLICIT_DEF)), (i32 IntRegs:$a1), sub_even),
             (i32 IntRegs:$a2), sub_odd)>;
 
-
-include "V9Instr64Bit.td"
-include "V9InstrVIS.td"
 include "V9InstrAliases.td"

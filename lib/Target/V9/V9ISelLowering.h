@@ -93,14 +93,14 @@ namespace llvm {
     /// exception address on entry to an EH pad.
     unsigned
     getExceptionPointerRegister(const Constant *PersonalityFn) const override {
-      return SP::I0;
+      return SP::A0;
     }
 
     /// If a physical register, this returns the register that receives the
     /// exception typeid on entry to a landing pad.
     unsigned
     getExceptionSelectorRegister(const Constant *PersonalityFn) const override {
-      return SP::I1;
+      return SP::A1;
     }
 
     /// getSetCCResultType - Return the ISD::SETCC ValueType
@@ -120,19 +120,12 @@ namespace llvm {
                                     const SmallVectorImpl<ISD::InputArg> &Ins,
                                     SDLoc dl, SelectionDAG &DAG,
                                     SmallVectorImpl<SDValue> &InVals) const;
-    SDValue LowerFormalArguments_64(SDValue Chain,
-                                    CallingConv::ID CallConv,
-                                    bool isVarArg,
-                                    const SmallVectorImpl<ISD::InputArg> &Ins,
-                                    SDLoc dl, SelectionDAG &DAG,
-                                    SmallVectorImpl<SDValue> &InVals) const;
+
 
     SDValue
       LowerCall(TargetLowering::CallLoweringInfo &CLI,
                 SmallVectorImpl<SDValue> &InVals) const override;
     SDValue LowerCall_32(TargetLowering::CallLoweringInfo &CLI,
-                         SmallVectorImpl<SDValue> &InVals) const;
-    SDValue LowerCall_64(TargetLowering::CallLoweringInfo &CLI,
                          SmallVectorImpl<SDValue> &InVals) const;
 
     SDValue
@@ -142,11 +135,6 @@ namespace llvm {
                   const SmallVectorImpl<SDValue> &OutVals,
                   SDLoc dl, SelectionDAG &DAG) const override;
     SDValue LowerReturn_32(SDValue Chain,
-                           CallingConv::ID CallConv, bool IsVarArg,
-                           const SmallVectorImpl<ISD::OutputArg> &Outs,
-                           const SmallVectorImpl<SDValue> &OutVals,
-                           SDLoc DL, SelectionDAG &DAG) const;
-    SDValue LowerReturn_64(SDValue Chain,
                            CallingConv::ID CallConv, bool IsVarArg,
                            const SmallVectorImpl<ISD::OutputArg> &Outs,
                            const SmallVectorImpl<SDValue> &OutVals,

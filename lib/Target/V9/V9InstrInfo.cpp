@@ -44,7 +44,6 @@ V9InstrInfo::V9InstrInfo(V9Subtarget &ST)
 unsigned V9InstrInfo::isLoadFromStackSlot(const MachineInstr *MI,
                                              int &FrameIndex) const {
   if (MI->getOpcode() == SP::LDri ||
-      MI->getOpcode() == SP::LDXri ||
       MI->getOpcode() == SP::LDFri ||
       MI->getOpcode() == SP::LDDFri ||
       MI->getOpcode() == SP::LDQFri) {
@@ -65,7 +64,6 @@ unsigned V9InstrInfo::isLoadFromStackSlot(const MachineInstr *MI,
 unsigned V9InstrInfo::isStoreToStackSlot(const MachineInstr *MI,
                                             int &FrameIndex) const {
   if (MI->getOpcode() == SP::STri ||
-      MI->getOpcode() == SP::STXri ||
       MI->getOpcode() == SP::STFri ||
       MI->getOpcode() == SP::STDFri ||
       MI->getOpcode() == SP::STQFri) {
@@ -322,12 +320,7 @@ void V9InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   if (SP::IntRegsRegClass.contains(DestReg, SrcReg))
     BuildMI(MBB, I, DL, get(SP::ORrr), DestReg).addReg(SP::G0)
       .addReg(SrcReg, getKillRegState(KillSrc));
-  else if (SP::IntPairRegClass.contains(DestReg, SrcReg)) {
-    subRegIdx  = DW_SubRegsIdx;
-    numSubRegs = 2;
-    movOpc     = SP::ORrr;
-    ExtraG0 = true;
-  } else if (SP::FPRegsRegClass.contains(DestReg, SrcReg))
+  else if (SP::FPRegsRegClass.contains(DestReg, SrcReg))
     BuildMI(MBB, I, DL, get(SP::FMOVS), DestReg)
       .addReg(SrcReg, getKillRegState(KillSrc));
   else if (SP::DFPRegsRegClass.contains(DestReg, SrcReg)) {
@@ -407,14 +400,8 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
       MFI.getObjectSize(FI), MFI.getObjectAlignment(FI));
 
   // On the order of operands here: think "[FrameIdx + 0] = SrcReg".
-  if (RC == &SP::I64RegsRegClass)
-    BuildMI(MBB, I, DL, get(SP::STXri)).addFrameIndex(FI).addImm(0)
-      .addReg(SrcReg, getKillRegState(isKill)).addMemOperand(MMO);
-  else if (RC == &SP::IntRegsRegClass)
+  if (RC == &SP::IntRegsRegClass)
     BuildMI(MBB, I, DL, get(SP::STri)).addFrameIndex(FI).addImm(0)
-      .addReg(SrcReg, getKillRegState(isKill)).addMemOperand(MMO);
-  else if (RC == &SP::IntPairRegClass)
-    BuildMI(MBB, I, DL, get(SP::STDri)).addFrameIndex(FI).addImm(0)
       .addReg(SrcReg, getKillRegState(isKill)).addMemOperand(MMO);
   else if (RC == &SP::FPRegsRegClass)
     BuildMI(MBB, I, DL, get(SP::STFri)).addFrameIndex(FI).addImm(0)
@@ -445,14 +432,8 @@ loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
       MachinePointerInfo::getFixedStack(*MF, FI), MachineMemOperand::MOLoad,
       MFI.getObjectSize(FI), MFI.getObjectAlignment(FI));
 
-  if (RC == &SP::I64RegsRegClass)
-    BuildMI(MBB, I, DL, get(SP::LDXri), DestReg).addFrameIndex(FI).addImm(0)
-      .addMemOperand(MMO);
-  else if (RC == &SP::IntRegsRegClass)
+  if (RC == &SP::IntRegsRegClass)
     BuildMI(MBB, I, DL, get(SP::LDri), DestReg).addFrameIndex(FI).addImm(0)
-      .addMemOperand(MMO);
-  else if (RC == &SP::IntPairRegClass)
-    BuildMI(MBB, I, DL, get(SP::LDDri), DestReg).addFrameIndex(FI).addImm(0)
       .addMemOperand(MMO);
   else if (RC == &SP::FPRegsRegClass)
     BuildMI(MBB, I, DL, get(SP::LDFri), DestReg).addFrameIndex(FI).addImm(0)

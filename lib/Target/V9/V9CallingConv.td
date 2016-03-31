@@ -19,7 +19,7 @@ def CC_V932 : CallingConv<[
   // Custom assign SRet to [sp+64].
   CCIfSRet<CCCustom<"CC_V9_Assign_SRet">>,
   // i32 f32 arguments get passed in integer registers if there is space.
-  CCIfType<[i32, f32], CCAssignToReg<[I0, I1, I2, I3, I4, I5]>>,
+  CCIfType<[i32, f32], CCAssignToReg<[A0, A1, A2, A3, A4, A5]>>,
   // f64 arguments are split and passed through registers or through stack.
   CCIfType<[f64], CCCustom<"CC_V9_Assign_Split_64">>,
   // As are v2i32 arguments (this would be the default behavior for
@@ -32,7 +32,7 @@ def CC_V932 : CallingConv<[
 ]>;
 
 def RetCC_V932 : CallingConv<[
-  CCIfType<[i32], CCAssignToReg<[I0, I1, I2, I3, I4, I5]>>,
+  CCIfType<[i32], CCAssignToReg<[A0, A1, A2, A3, A4, A5]>>,
   CCIfType<[f32], CCAssignToReg<[F0, F1, F2, F3]>>,
   CCIfType<[f64], CCAssignToReg<[D0, D1]>>,
   CCIfType<[v2i32], CCCustom<"CC_V9_Assign_Ret_Split_64">>
@@ -108,37 +108,8 @@ def RetCC_V932 : CallingConv<[
 // Function return values are passed exactly like function arguments, except a
 // struct up to 32 bytes in size can be returned in registers.
 
-// Function arguments AND most return values.
-def CC_V964 : CallingConv<[
-  // The frontend uses the inreg flag to indicate i32 and float arguments from
-  // structs. These arguments are not promoted to 64 bits, but they can still
-  // be assigned to integer and float registers.
-  CCIfInReg<CCIfType<[i32, f32], CCCustom<"CC_V964_Half">>>,
-
-  // All integers are promoted to i64 by the caller.
-  CCIfType<[i32], CCPromoteToType<i64>>,
-
-  // Custom assignment is required because stack space is reserved for all
-  // arguments whether they are passed in registers or not.
-  CCCustom<"CC_V964_Full">
-]>;
-
-def RetCC_V964 : CallingConv<[
-  // A single f32 return value always goes in %f0. The ABI doesn't specify what
-  // happens to multiple f32 return values outside a struct.
-  CCIfType<[f32], CCCustom<"CC_V964_Half">>,
-
-  // Otherwise, return values are passed exactly like arguments.
-  CCDelegateTo<CC_V964>
-]>;
-
-// Callee-saved registers are handled by the register window mechanism.
-def CSR : CalleeSavedRegs<(add)> {
-  let OtherPreserved = (add (sequence "I%u", 0, 7),
-                            (sequence "L%u", 0, 7));
-}
 
 // Callee-saved registers for calls with ReturnsTwice attribute.
 def RTCSR : CalleeSavedRegs<(add)> {
-  let OtherPreserved = (add I6, I7);
+  let OtherPreserved = (add A6, A7);
 }

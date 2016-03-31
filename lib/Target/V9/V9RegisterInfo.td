@@ -141,22 +141,14 @@ def O4 : Ri<12, "O4">, DwarfRegNum<[12]>;
 def O5 : Ri<13, "O5">, DwarfRegNum<[13]>;
 def O6 : Ri<14, "SP">, DwarfRegNum<[14]>;
 def O7 : Ri<15, "O7">, DwarfRegNum<[15]>;
-def L0 : Ri<16, "L0">, DwarfRegNum<[16]>;
-def L1 : Ri<17, "L1">, DwarfRegNum<[17]>;
-def L2 : Ri<18, "L2">, DwarfRegNum<[18]>;
-def L3 : Ri<19, "L3">, DwarfRegNum<[19]>;
-def L4 : Ri<20, "L4">, DwarfRegNum<[20]>;
-def L5 : Ri<21, "L5">, DwarfRegNum<[21]>;
-def L6 : Ri<22, "L6">, DwarfRegNum<[22]>;
-def L7 : Ri<23, "L7">, DwarfRegNum<[23]>;
-def I0 : Ri<24, "I0">, DwarfRegNum<[24]>;
-def I1 : Ri<25, "I1">, DwarfRegNum<[25]>;
-def I2 : Ri<26, "I2">, DwarfRegNum<[26]>;
-def I3 : Ri<27, "I3">, DwarfRegNum<[27]>;
-def I4 : Ri<28, "I4">, DwarfRegNum<[28]>;
-def I5 : Ri<29, "I5">, DwarfRegNum<[29]>;
-def I6 : Ri<30, "FP">, DwarfRegNum<[30]>;
-def I7 : Ri<31, "I7">, DwarfRegNum<[31]>;
+def A0 : Ri<24, "A0">, DwarfRegNum<[24]>;
+def A1 : Ri<25, "A1">, DwarfRegNum<[25]>;
+def A2 : Ri<26, "A2">, DwarfRegNum<[26]>;
+def A3 : Ri<27, "A3">, DwarfRegNum<[27]>;
+def A4 : Ri<28, "A4">, DwarfRegNum<[28]>;
+def A5 : Ri<29, "A5">, DwarfRegNum<[29]>;
+def A6 : Ri<30, "FP">, DwarfRegNum<[30]>;
+def A7 : Ri<31, "A7">, DwarfRegNum<[31]>;
 
 // Floating-point registers
 def F0  : Rf< 0,  "F0">, DwarfRegNum<[32]>;
@@ -290,14 +282,10 @@ def O0_O1 : Rdi<8, "O0", [O0, O1]>;
 def O2_O3 : Rdi<10, "O2", [O2, O3]>;
 def O4_O5 : Rdi<12, "O4", [O4, O5]>;
 def O6_O7 : Rdi<14, "O6", [O6, O7]>;
-def L0_L1 : Rdi<16, "L0", [L0, L1]>;
-def L2_L3 : Rdi<18, "L2", [L2, L3]>;
-def L4_L5 : Rdi<20, "L4", [L4, L5]>;
-def L6_L7 : Rdi<22, "L6", [L6, L7]>;
-def I0_I1 : Rdi<24, "I0", [I0, I1]>;
-def I2_I3 : Rdi<26, "I2", [I2, I3]>;
-def I4_I5 : Rdi<28, "I4", [I4, I5]>;
-def I6_I7 : Rdi<30, "I6", [I6, I7]>;
+def A0_A1 : Rdi<24, "A0", [A0, A1]>;
+def A2_A3 : Rdi<26, "A2", [A2, A3]>;
+def A4_A5 : Rdi<28, "A4", [A4, A5]>;
+def A6_A7 : Rdi<30, "A6", [A6, A7]>;
 
 // Aliases of the co-processor registers used for LDD/STD double-word operations
 def C0_C1 : Rdi<0, "C0", [C0, C1]>;
@@ -326,18 +314,11 @@ def C30_C31 : Rdi<30, "C30", [C30, C31]>;
 // register class for that. The i64 type is included here to allow i64 patterns
 // using the integer instructions.
 def IntRegs : RegisterClass<"SP", [i32, i64], 32,
-                            (add (sequence "I%u", 0, 7),
+                            (add (sequence "A%u", 0, 7),
                                  (sequence "G%u", 0, 7),
-                                 (sequence "L%u", 0, 7),
                                  (sequence "O%u", 0, 7))>;
-
-
-// Should be in the same order as IntRegs.
-def IntPair : RegisterClass<"SP", [v2i32], 64,
-    (add I0_I1, I2_I3, I4_I5, I6_I7,
-         G0_G1, G2_G3, G4_G5, G6_G7,
-         L0_L1, L2_L3, L4_L5, L6_L7,
-         O0_O1, O2_O3, O4_O5, O6_O7)>;
+def TypeBRegs : RegisterClass<"SP", [i32, i64], 32,
+                            (add (sequence "O%u", 0, 7))>;
 
 // Register class for 64-bit mode, with a 64-bit spill slot size.
 // These are the same as the 32-bit registers, so TableGen will consider this

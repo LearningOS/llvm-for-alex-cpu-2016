@@ -367,7 +367,7 @@ static bool combineRestoreADD(MachineBasicBlock::iterator RestoreMI,
   // After :  restore <op0>, <op1>, %o[0-7]
 
   unsigned reg = AddMI->getOperand(0).getReg();
-  if (reg < SP::I0 || reg > SP::I7)
+  if (reg < SP::A0 || reg > SP::A7)
     return false;
 
   // Erase RESTORE.
@@ -379,7 +379,7 @@ static bool combineRestoreADD(MachineBasicBlock::iterator RestoreMI,
                           : SP::RESTOREri));
 
   // Map the destination register.
-  AddMI->getOperand(0).setReg(reg - SP::I0 + SP::O0);
+  AddMI->getOperand(0).setReg(reg - SP::A0 + SP::O0);
 
   return true;
 }
@@ -395,7 +395,7 @@ static bool combineRestoreOR(MachineBasicBlock::iterator RestoreMI,
   // After :  restore <op0>, <op1>, %o[0-7]
 
   unsigned reg = OrMI->getOperand(0).getReg();
-  if (reg < SP::I0 || reg > SP::I7)
+  if (reg < SP::A0 || reg > SP::A7)
     return false;
 
   // check whether it is a copy.
@@ -418,7 +418,7 @@ static bool combineRestoreOR(MachineBasicBlock::iterator RestoreMI,
                          : SP::RESTOREri));
 
   // Map the destination register.
-  OrMI->getOperand(0).setReg(reg - SP::I0 + SP::O0);
+  OrMI->getOperand(0).setReg(reg - SP::A0 + SP::O0);
 
   return true;
 }
@@ -433,7 +433,7 @@ static bool combineRestoreSETHIi(MachineBasicBlock::iterator RestoreMI,
   // After :  restore %g0, (imm3<<10), %o[0-7]
 
   unsigned reg = SetHiMI->getOperand(0).getReg();
-  if (reg < SP::I0 || reg > SP::I7)
+  if (reg < SP::A0 || reg > SP::A7)
     return false;
 
   if (!SetHiMI->getOperand(1).isImm())
@@ -452,7 +452,7 @@ static bool combineRestoreSETHIi(MachineBasicBlock::iterator RestoreMI,
 
   RestoreMI->setDesc(TII->get(SP::RESTOREri));
 
-  RestoreMI->getOperand(0).setReg(reg - SP::I0 + SP::O0);
+  RestoreMI->getOperand(0).setReg(reg - SP::A0 + SP::O0);
   RestoreMI->getOperand(1).setReg(SP::G0);
   RestoreMI->getOperand(2).ChangeToImmediate(imm);
 

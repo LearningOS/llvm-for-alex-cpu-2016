@@ -96,9 +96,7 @@ void V9MCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
   default: break;
   case SP::TLS_CALL:   tlsOpNo = 1; break;
   case SP::TLS_ADDrr:
-  case SP::TLS_ADDXrr:
-  case SP::TLS_LDrr:
-  case SP::TLS_LDXrr:  tlsOpNo = 3; break;
+  case SP::TLS_LDrr:  tlsOpNo = 3; break;
   }
   if (tlsOpNo != 0) {
     const MCOperand &MO = MI.getOperand(tlsOpNo);

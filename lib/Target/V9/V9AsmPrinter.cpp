@@ -306,7 +306,7 @@ void V9AsmPrinter::printOperand(const MachineInstr *MI, int opNum,
     if (MI->getOpcode() == SP::CALL)
       assert(TF == V9MCExpr::VK_V9_None &&
              "Cannot handle target flags on call address");
-    else if (MI->getOpcode() == SP::SETHIi || MI->getOpcode() == SP::SETHIXi)
+    else if (MI->getOpcode() == SP::SETHIi)
       assert((TF == V9MCExpr::VK_V9_HI
               || TF == V9MCExpr::VK_V9_H44
               || TF == V9MCExpr::VK_V9_HH
@@ -330,10 +330,7 @@ void V9AsmPrinter::printOperand(const MachineInstr *MI, int opNum,
     else if (MI->getOpcode() == SP::TLS_LDrr)
       assert(TF == V9MCExpr::VK_V9_TLS_IE_LD &&
              "Cannot handle target flags on ld for TLS");
-    else if (MI->getOpcode() == SP::TLS_LDXrr)
-      assert(TF == V9MCExpr::VK_V9_TLS_IE_LDX &&
-             "Cannot handle target flags on ldx for TLS");
-    else if (MI->getOpcode() == SP::XORri || MI->getOpcode() == SP::XORXri)
+    else if (MI->getOpcode() == SP::XORri)
       assert((TF == V9MCExpr::VK_V9_TLS_LDO_LOX10
               || TF == V9MCExpr::VK_V9_TLS_LE_LOX10) &&
              "Cannot handle target flags on xor for TLS");

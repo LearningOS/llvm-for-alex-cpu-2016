@@ -68,7 +68,7 @@ bool V9InstPrinter::printV9AliasInstr(const MCInst *MI,
           MI->getOperand(2).getImm() == 8) {
         switch(MI->getOperand(1).getReg()) {
         default: break;
-        case SP::I7: O << "\tret"; return true;
+        case SP::A7: O << "\tret"; return true;
         case SP::O7: O << "\tretl"; return true;
         }
       }
@@ -124,8 +124,6 @@ void V9InstPrinter::printOperand(const MCInst *MI, int opNum,
       case SP::TICCrr: // Fall through
       case SP::TRAPri: // Fall through
       case SP::TRAPrr: // Fall through
-      case SP::TXCCri: // Fall through
-      case SP::TXCCrr: // Fall through
         // Only seven-bit values up to 127.
         O << ((int) MO.getImm() & 0x7f);  
         return;
@@ -171,11 +169,8 @@ void V9InstPrinter::printCCOperand(const MCInst *MI, int opNum,
   case SP::BPFCCA:
   case SP::BPFCCNT:
   case SP::BPFCCANT:
-  case SP::MOVFCCrr:  case SP::V9MOVFCCrr:
-  case SP::MOVFCCri:  case SP::V9MOVFCCri:
-  case SP::FMOVS_FCC: case SP::V9FMOVS_FCC:
-  case SP::FMOVD_FCC: case SP::V9FMOVD_FCC:
-  case SP::FMOVQ_FCC: case SP::V9FMOVQ_FCC:
+  case SP::MOVFCCrr:
+  case SP::MOVFCCri:
     // Make sure CC is a fp conditional flag.
     CC = (CC < 16) ? (CC + 16) : CC;
     break;
