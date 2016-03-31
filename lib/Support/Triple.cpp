@@ -64,6 +64,7 @@ const char *Triple::getArchTypeName(ArchType Kind) {
   case shave:       return "shave";
   case wasm32:      return "wasm32";
   case wasm64:      return "wasm64";
+  case v9:          return "v9";
   }
 
   llvm_unreachable("Invalid ArchType!");
@@ -124,6 +125,8 @@ const char *Triple::getArchTypePrefix(ArchType Kind) {
   case hsail:
   case hsail64:     return "hsail";
 
+  case v9:           return "v9";
+
   case spir:
   case spir64:      return "spir";
   case kalimba:     return "kalimba";
@@ -131,6 +134,7 @@ const char *Triple::getArchTypePrefix(ArchType Kind) {
   case shave:       return "shave";
   case wasm32:
   case wasm64:      return "wasm";
+
   }
 }
 
@@ -276,6 +280,7 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
     .Case("lanai", lanai)
     .Case("shave", shave)
     .Case("wasm32", wasm32)
+    .Case("v9", v9)
     .Case("wasm64", wasm64)
     .Default(UnknownArch);
 }
@@ -386,6 +391,7 @@ static Triple::ArchType parseArch(StringRef ArchName) {
     .Case("shave", Triple::shave)
     .Case("wasm32", Triple::wasm32)
     .Case("wasm64", Triple::wasm64)
+    .Case("v9", Triple::v9)
     .Default(Triple::UnknownArch);
 
   // Some architectures require special parsing logic just to compute the
@@ -600,6 +606,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::wasm32:
   case Triple::wasm64:
   case Triple::xcore:
+  case Triple::v9:
     return Triple::ELF;
 
   case Triple::ppc:
@@ -1129,6 +1136,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::lanai:
   case llvm::Triple::shave:
   case llvm::Triple::wasm32:
+  case llvm::Triple::v9;
     return 32;
 
   case llvm::Triple::aarch64:
@@ -1203,6 +1211,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::lanai:
   case Triple::shave:
   case Triple::wasm32:
+  case Triple::v9:
     // Already 32-bit.
     break;
 

@@ -219,6 +219,7 @@ set(LLVM_ALL_TARGETS
   PowerPC
   Sparc
   SystemZ
+  V9
   X86
   XCore
   )

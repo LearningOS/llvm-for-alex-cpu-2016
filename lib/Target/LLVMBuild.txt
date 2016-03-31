@@ -34,6 +34,7 @@ subdirectories =
  Sparc
  SystemZ
  WebAssembly
+ V9
  X86
  XCore
 

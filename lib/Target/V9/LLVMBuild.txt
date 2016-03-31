@@ -1,0 +1,24 @@
+[common]
+subdirectories = MCTargetDesc TargetInfo
+
+[component_0]
+type = TargetGroup
+name = V9
+parent = Target
+has_asmparser = 1
+has_asmprinter = 1
+has_disassembler = 0
+has_jit = 0
+
+[component_1]
+type = Library
+name = V9CodeGen
+parent = V9
+required_libraries =  CodeGen
+                      Core MC
+                      Cpu0Desc
+                      Cpu0Info
+                      SelectionDAG
+                      Support
+                      Target
+add_to_library_groups = V9
