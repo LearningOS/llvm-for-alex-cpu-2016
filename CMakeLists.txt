@@ -217,7 +217,7 @@ set(LLVM_ALL_TARGETS
   MSP430
   NVPTX
   PowerPC
-  Sparc
+#  Sparc
   SystemZ
   V9
   X86
