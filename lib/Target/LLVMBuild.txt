@@ -31,7 +31,7 @@ subdirectories =
  NVPTX
  Mips
  PowerPC
- Sparc
+; Sparc
  SystemZ
  WebAssembly
  V9
