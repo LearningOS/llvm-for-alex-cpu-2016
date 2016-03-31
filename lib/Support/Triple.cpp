@@ -1136,7 +1136,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::lanai:
   case llvm::Triple::shave:
   case llvm::Triple::wasm32:
-  case llvm::Triple::v9;
+  case llvm::Triple::v9:
     return 32;
 
   case llvm::Triple::aarch64:
@@ -1246,6 +1246,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::xcore:
   case Triple::sparcel:
   case Triple::shave:
+  case Triple::v9:
     T.setArch(UnknownArch);
     break;
 

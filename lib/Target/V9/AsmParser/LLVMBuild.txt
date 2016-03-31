@@ -1,4 +1,4 @@
-;===- ./lib/Target/V9/TargetInfo/LLVMBuild.txt --------------*- Conf -*--===;
+;===- ./lib/Target/V9/AsmParser/LLVMBuild.txt ---------------*- Conf -*--===;
 ;
 ;                     The LLVM Compiler Infrastructure
 ;
@@ -17,7 +17,7 @@
 
 [component_0]
 type = Library
-name = V9Info
+name = V9AsmParser
 parent = V9
-required_libraries = Support
+required_libraries = MC MCParser V9Desc V9Info Support
 add_to_library_groups = V9

@@ -1,22 +1,33 @@
-set(LLVM_TARGET_DEFINITIONS V9Others.td)
+set(LLVM_TARGET_DEFINITIONS V9.td)
 
-# Generate Cpu0GenRegisterInfo.inc and Cpu0GenInstrInfo.inc which included by
-#  your hand code C++ files.
-# Cpu0GenRegisterInfo.inc came from Cpu0RegisterInfo.td, Cpu0GenInstrInfo.inc
-#  came from Cpu0InstrInfo.td.
 tablegen(LLVM V9GenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM V9GenInstrInfo.inc -gen-instr-info)
-#tablegen(LLVM Cpu0GenSubtargetInfo.inc -gen-subtarget)
-#tablegen(LLVM Cpu0GenMCPseudoLowering.inc -gen-pseudo-lowering)
-
-# Cpu0CommonTableGen must be defined
+tablegen(LLVM V9GenDisassemblerTables.inc -gen-disassembler)
+tablegen(LLVM V9GenMCCodeEmitter.inc -gen-emitter)
+tablegen(LLVM V9GenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM V9GenAsmMatcher.inc -gen-asm-matcher)
+tablegen(LLVM V9GenDAGISel.inc -gen-dag-isel)
+tablegen(LLVM V9GenSubtargetInfo.inc -gen-subtarget)
+tablegen(LLVM V9GenCallingConv.inc -gen-callingconv)
 add_public_tablegen_target(V9CommonTableGen)
 
-# Cpu0CodeGen should match with LLVMBuild.txt Cpu0CodeGen
 add_llvm_target(V9CodeGen
-        V9TargetMachine.cpp
-        )
+  DelaySlotFiller.cpp
+  V9AsmPrinter.cpp
+  V9InstrInfo.cpp
+  V9ISelDAGToDAG.cpp
+  V9ISelLowering.cpp
+  V9FrameLowering.cpp
+  V9MachineFunctionInfo.cpp
+  V9RegisterInfo.cpp
+  V9Subtarget.cpp
+  V9TargetMachine.cpp
+  V9MCInstLower.cpp
+  V9TargetObjectFile.cpp
+  )
 
-# Should match with "subdirectories =  MCTargetDesc TargetInfo" in LLVMBuild.txt
 add_subdirectory(TargetInfo)
 add_subdirectory(MCTargetDesc)
+add_subdirectory(InstPrinter)
+add_subdirectory(AsmParser)
+add_subdirectory(Disassembler)

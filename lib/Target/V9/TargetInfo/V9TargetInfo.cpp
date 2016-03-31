@@ -1,4 +1,4 @@
-//===-- V9TargetInfo.cpp - V9 Target Implementation -------------------===//
+//===-- V9TargetInfo.cpp - V9 Target Implementation -----------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -13,7 +13,14 @@
 using namespace llvm;
 
 Target llvm::TheV9Target;
+Target llvm::TheV9V9Target;
+Target llvm::TheV9elTarget;
 
 extern "C" void LLVMInitializeV9TargetInfo() {
-    RegisterTarget<Triple::V9, /*HasJIT=*/false> X(TheV9Target, "v9", "V9");
+  RegisterTarget<Triple::sparc, /*HasJIT=*/true> X(TheV9Target, "sparc",
+                                                   "V9");
+  RegisterTarget<Triple::sparcv9, /*HasJIT=*/true> Y(TheV9V9Target,
+                                                     "sparcv9", "V9 V9");
+  RegisterTarget<Triple::sparcel, /*HasJIT=*/true> Z(TheV9elTarget,
+                                                     "sparcel", "V9 LE");
 }

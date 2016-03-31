@@ -1,4 +1,9 @@
-# MCTargetDesc/CMakeLists.txt
 add_llvm_library(LLVMV9Desc
-        V9MCTargetDesc.cpp
-        )
+  V9AsmBackend.cpp
+  V9ELFObjectWriter.cpp
+  V9MCAsmInfo.cpp
+  V9MCCodeEmitter.cpp
+  V9MCTargetDesc.cpp
+  V9MCExpr.cpp
+  V9TargetStreamer.cpp
+  )
