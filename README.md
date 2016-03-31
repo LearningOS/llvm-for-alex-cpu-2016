@@ -47,3 +47,7 @@ suggestions.
     - [用LLVM给OpenRISC 1000写后端教程](http://www.embecosm.com/appnotes/ean10/ean10-howto-llvmas-1.0.html)
     - [fork了一个llvm](https://github.com/a1exwang/llvm)
     - [LLVM Assembler教程](http://www.embecosm.com/appnotes/ean10/ean10-howto-llvmas-1.0.html#idp112800)
+
+- TODOS
+    - LLVM对Target代码的调用顺序
+    - LLVM IR到Asm过程, 哪些代码是必要的
