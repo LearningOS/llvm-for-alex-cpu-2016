@@ -39,7 +39,7 @@ suggestions.
 - \*源码级调试(elf文件中的符号信息?)
 - \*链接脚本(暂时不知道llvm-ld是否可以)
 
-参考资料:
+- 参考资料:
     - [LLVM backend官方教程](http://llvm.org/docs/WritingAnLLVMBackend.html)
     - [LLVM IR文档](http://llvm.org/docs/LangRef.html)
     - [V9CPU文档](https://github.com/chyyuu/v9-cpu)
