@@ -2,7 +2,7 @@ class Inst<string asmstr, dag outs, dag ins>
           : Instruction {
   field bits<32> Inst;
 
-  let Namespace = "SP";
+  let Namespace = "V9Cpu";
   let Size = 4;
 
   dag OutOperandList = outs;

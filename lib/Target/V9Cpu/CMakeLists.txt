@@ -2,16 +2,16 @@ set(LLVM_TARGET_DEFINITIONS V9Cpu.td)
 
 tablegen(LLVM V9CpuGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM V9CpuGenInstrInfo.inc -gen-instr-info)
-tablegen(LLVM V9CpuGenAsmWriter.inc -gen-asm-writer)
+#tablegen(LLVM V9CpuGenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM V9CpuGenCallingConv.inc -gen-callingconv)
 add_public_tablegen_target(V9CpuCommonTableGen)
 
 add_llvm_target(V9CpuCodeGen
-        V9CpuAsmPrinter.cpp
-        V9CpuInstrInfo.cpp
-        V9CpuISelDAGToDAG.cpp
-        V9CpuISelLowering.cpp
-        V9CpuFrameLowering.cpp
+        #V9CpuAsmPrinter.cpp
+        #V9CpuInstrInfo.cpp
+       #V9CpuISelDAGToDAG.cpp
+        #V9CpuISelLowering.cpp
+        #V9CpuFrameLowering.cpp
         V9CpuRegisterInfo.cpp
         V9CpuTargetMachine.cpp
         )
