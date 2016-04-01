@@ -1,0 +1,14 @@
+[common]
+
+[component_0]
+type = TargetGroup
+name = V9Cpu
+parent = Target
+has_asmprinter = 1
+
+[component_1]
+type = Library
+name = V9CpuCodeGen
+parent = V9Cpu
+required_libraries = AsmPrinter CodeGen Core MC SelectionDAG Support Target
+add_to_library_groups = V9Cpu

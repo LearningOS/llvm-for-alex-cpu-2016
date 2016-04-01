@@ -35,6 +35,7 @@ subdirectories =
  SystemZ
  WebAssembly
  V9
+ V9Cpu
  X86
  XCore
 

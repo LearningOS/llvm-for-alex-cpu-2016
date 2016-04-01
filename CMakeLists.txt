@@ -220,6 +220,7 @@ set(LLVM_ALL_TARGETS
 #  Sparc
   SystemZ
   V9
+  V9Cpu
   X86
   XCore
   )
