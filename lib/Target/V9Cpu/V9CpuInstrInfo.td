@@ -1,4 +1,4 @@
-class InstSP<string asmstr, dag outs, dag ins>
+class Inst<string asmstr, dag outs, dag ins>
           : Instruction {
   field bits<32> Inst;
 
@@ -13,11 +13,10 @@ class InstSP<string asmstr, dag outs, dag ins>
   let DecoderNamespace = "V9Cpu";
 }
 
-class FA<string asmstr, bits<8> opcode, bits<24> imm, dag outs, dag ins>
-        : InstSP<asmstr> {
+class LoadInst<string asmstr, bits<8> opcode>
+        : Inst<!strconcat(asmstr, " $src"), (outs), (ins Operand<iPTR>:$src)> {
 
-  let Inst{31-8} = imm;
   let Inst{7-0}  = opcode;
 }
 
-def LD   : FA<"lla",  51, 0, (outs), (ins)>;
+def LL   : LoadInst<"ll",  0x0e>;

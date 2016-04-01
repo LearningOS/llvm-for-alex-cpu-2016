@@ -75,6 +75,7 @@ public:
     x86_64,     // X86-64: amd64, x86_64
     xcore,      // XCore: xcore
     v9,
+    v9cpu,
     nvptx,      // NVPTX: 32-bit
     nvptx64,    // NVPTX: 64-bit
     le32,       // le32: generic little-endian 32-bit CPU (PNaCl)

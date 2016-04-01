@@ -19,5 +19,6 @@ let Namespace = "V9Cpu" in {
 }
 
 def IntRegs     : RegisterClass<"V9Cpu", [i32], 32, (add A, B, C)>;
+def ARegs     : RegisterClass<"V9Cpu", [i32], 32, (add A)>;
 def FloatRegs   : RegisterClass<"V9Cpu", [f64], 64, (add F, G)>;
 def ControlRegs : RegisterClass<"V9Cpu", [i32], 32, (add PC, SP, TSP, FLAGS)>;
