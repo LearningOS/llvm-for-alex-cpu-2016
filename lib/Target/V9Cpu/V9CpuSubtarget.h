@@ -23,7 +23,8 @@ namespace llvm {
 
     class V9CpuSubtarget : public V9CpuGenSubtargetInfo {
         virtual void anchor();
-
+        V9CpuSubtarget &initializeSubtargetDependencies(StringRef CPU, StringRef FS,
+                                                 const TargetMachine &TM);
     protected:
         enum V9CpuArchEnum {
             V9CpuI
@@ -46,20 +47,16 @@ namespace llvm {
         std::unique_ptr<const V9CpuTargetLowering> TLInfo;
 
     public:
+
+        void ParseSubtargetFeatures(StringRef CPU, StringRef FS);
         const V9CpuABIInfo &getABI() const;
         unsigned stackAlignment() const { return 8; }
         /// This constructor initializes the data members to match that
         /// of the specified triple.
         V9CpuSubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
                       bool little, const V9CpuTargetMachine &_TM);
-
-//        const TargetSelectionDAGInfo *getSelectionDAGInfo() const override {
-//            return &TSInfo;
-//        }
         const V9CpuInstrInfo *getInstrInfo() const override { return InstrInfo.get(); }
-//        const TargetFrameLowering *getFrameLowering() const override {
-//            return FrameLowering.get();
-//        }
+
         const V9CpuRegisterInfo *getRegisterInfo() const override {
             return &InstrInfo->getRegisterInfo();
         }
@@ -71,6 +68,5 @@ namespace llvm {
         }
     };
 } // End llvm namespace
-
 
 #endif

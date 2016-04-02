@@ -1,8 +1,12 @@
 #ifndef V9CPU_TARGET_MACHINE_H
 #define V9CPU_TARGET_MACHINE_H
 
-#include "llvm/Target/TargetMachine.h"
 #include "V9CpuSubtarget.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/CodeGen/Passes.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/CodeGen/SelectionDAGISel.h"
+#include "llvm/Target/TargetFrameLowering.h"
 
 namespace llvm {
 
@@ -20,6 +24,8 @@ namespace llvm {
         TargetLoweringObjectFile *getObjFileLowering() const override {
             return TLOF.get();
         }
+        TargetPassConfig *createPassConfig(PassManagerBase &PM);
+        const V9CpuABIInfo &getABI() const { return ABI; }
 
         const V9CpuSubtarget *getSubtargetImpl() const {
             return &DefaultSubtarget;

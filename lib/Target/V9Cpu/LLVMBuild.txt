@@ -1,5 +1,5 @@
 [common]
-subdirectories = TargetInfo MCTargetDesc
+subdirectories = TargetInfo MCTargetDesc InstPrinter
 
 [component_0]
 type = TargetGroup
@@ -11,5 +11,6 @@ has_asmprinter = 1
 type = Library
 name = V9CpuCodeGen
 parent = V9Cpu
-required_libraries = AsmPrinter CodeGen Core MC SelectionDAG Support Target
+required_libraries = AsmPrinter CodeGen Core MC SelectionDAG Support
+                        Target AsmPrinter V9CpuAsmPrinter
 add_to_library_groups = V9Cpu

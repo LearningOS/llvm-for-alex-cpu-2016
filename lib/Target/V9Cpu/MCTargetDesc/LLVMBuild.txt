@@ -5,4 +5,5 @@ parent = V9Cpu
 required_libraries = MC
                      V9CpuInfo
                      Support
+                     V9CpuAsmPrinter
 add_to_library_groups = V9Cpu

@@ -20,4 +20,7 @@ namespace llvm {
 #define GET_INSTRINFO_ENUM
 #include "V9CpuGenInstrInfo.inc"
 
+#define GET_SUBTARGETINFO_ENUM
+#include "V9CpuGenSubtargetInfo.inc"
+
 #endif

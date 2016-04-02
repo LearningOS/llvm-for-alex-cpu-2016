@@ -26,7 +26,9 @@ namespace llvm {
         ///
         virtual const V9CpuRegisterInfo &getRegisterInfo() const = 0;
         /// Return the number of bytes of code the specified instruction may be.
-        unsigned GetInstSizeInBytes(const MachineInstr *MI) const;
+        unsigned GetInstSizeInBytes(const MachineInstr *MI) const {
+            return 4;
+        }
 
     protected:
     };

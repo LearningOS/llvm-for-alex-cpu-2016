@@ -1,16 +1,18 @@
 #include "V9CpuRegisterInfo.h"
+#include "V9CpuInstrInfo.h"
 #include "V9CpuFrameLowering.h"
+#include "V9CpuSubtarget.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/Target/TargetInstrInfo.h"
 
 using namespace llvm;
-
-#define GET_REGINFO
+#define GET_REGINFO_TARGET_DESC
 #include "V9CpuGenRegisterInfo.inc"
-/*
-V9CpuRegisterInfo::V9CpuRegisterInfo() : V9CpuGenRegisterInfo(V9Cpu::PC) {}
+
+V9CpuRegisterInfo::V9CpuRegisterInfo(const V9CpuSubtarget &ST)
+ : V9CpuGenRegisterInfo(V9Cpu::PC), Subtarget(ST) {}
 
 const MCPhysReg*
 V9CpuRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
@@ -20,7 +22,7 @@ V9CpuRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
 const uint32_t *
 V9CpuRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
                                      CallingConv::ID CC) const {
-    return CSR_CalleeSavedRegs_Mask;
+    return CSR_CalleeSavedRegs_RegMask;
 }
 
 BitVector V9CpuRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
@@ -61,4 +63,3 @@ bool V9CpuRegisterInfo::canRealignStack(const MachineFunction &MF) const {
     //if (getFrameLowering(MF)->hasReservedCallFrame(MF))
     //    return true;
 }
-*/

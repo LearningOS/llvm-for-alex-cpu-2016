@@ -8,8 +8,11 @@
 #include "V9CpuGenRegisterInfo.inc"
 
 namespace llvm {
+    class V9CpuSubtarget;
     struct V9CpuRegisterInfo : public V9CpuGenRegisterInfo {
-        V9CpuRegisterInfo();
+    protected:
+        const V9CpuSubtarget &Subtarget;
+        V9CpuRegisterInfo(const V9CpuSubtarget &Subtarget);
         const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
         const uint32_t *getCallPreservedMask(const MachineFunction &MF, CallingConv::ID CC) const override;
 
