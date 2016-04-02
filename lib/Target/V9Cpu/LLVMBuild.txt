@@ -1,4 +1,5 @@
 [common]
+subdirectories = TargetInfo MCTargetDesc
 
 [component_0]
 type = TargetGroup

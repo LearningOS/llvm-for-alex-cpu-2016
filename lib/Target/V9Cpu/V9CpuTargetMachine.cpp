@@ -2,18 +2,12 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "V9CpuTargetMachine.h"
-
-namespace llvm {
-
-    Target TheV9CpuTarget;
-
-    extern "C" void LLVMInitializeV9CpuTargetInfo() {
-      // Register the target.
-      RegisterTargetMachine<Triple::v9cpu, V9CpuSeriesTargetMachine> X(llvm::TheV9CpuTarget);
-    }
-}
+#include "V9Cpu.h"
 
 using namespace llvm;
+extern "C" void LLVMInitializeV9CpuTarget() {
+}
+
 V9CpuSeriesTargetMachine::V9CpuSeriesTargetMachine(const Target &T, const Triple &TT,
                                                    StringRef CPU, StringRef FS,
                                                    const TargetOptions &Options,

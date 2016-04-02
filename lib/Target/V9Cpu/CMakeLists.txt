@@ -15,3 +15,6 @@ add_llvm_target(V9CpuCodeGen
         V9CpuRegisterInfo.cpp
         V9CpuTargetMachine.cpp
         )
+
+add_subdirectory(TargetInfo)
+add_subdirectory(MCTargetDesc)
