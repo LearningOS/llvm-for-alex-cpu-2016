@@ -2,7 +2,7 @@
 #define LLVM_LIB_TARGET_V9CPU_MCTARGETDESC_V9CPUMCTARGETDESC_H
 
 #include "llvm/Support/DataTypes.h"
-
+#include "V9CpuFrameLowering.h"
 namespace llvm {
     class Target;
     class Triple;

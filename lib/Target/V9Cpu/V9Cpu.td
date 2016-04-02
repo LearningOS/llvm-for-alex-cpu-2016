@@ -15,3 +15,8 @@ def V9CpuAsmWriter : AsmWriter {
 def V9Cpu : Target {
   let InstructionSet = V9CpuInstrInfo;
 }
+
+class Proc<string Name, list<SubtargetFeature> Features>
+ : Processor<Name, NoItineraries, Features>;
+
+def : Proc<"v9-generic",         []>;

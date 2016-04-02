@@ -1,4 +1,5 @@
 #include "V9CpuRegisterInfo.h"
+#include "V9CpuFrameLowering.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
