@@ -40,7 +40,7 @@ void V9CpuCallEntry::printCustom(raw_ostream &O) const {
   O << "V9CpuCallEntry: ";
 }
 V9CpuFunctionInfo::V9CpuFunctionInfo(MachineFunction& MF)
-                : MF(MF),
+                : MF(MF),  SRetReturnReg(0),
                   VarArgsFrameIndex(0),
                   MaxCallFrameSize(0) {}
 V9CpuFunctionInfo::~V9CpuFunctionInfo() {}

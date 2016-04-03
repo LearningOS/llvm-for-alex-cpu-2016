@@ -15,6 +15,9 @@ namespace llvm {
         void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
         void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 
+        bool hasReservedCallFrame(const MachineFunction &MF) const;
+
+        void determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs, RegScavenger *RS) const;
     };
 
 } // End llvm namespace

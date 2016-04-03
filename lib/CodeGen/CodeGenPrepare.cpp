@@ -214,8 +214,10 @@ bool CodeGenPrepare::runOnFunction(Function &F) {
   PromotedInsts.clear();
 
   ModifiedDT = false;
-  if (TM)
-    TLI = TM->getSubtargetImpl(F)->getTargetLowering();
+  if (TM) {
+    auto subtargetImpl = TM->getSubtargetImpl(F);
+    TLI = subtargetImpl->getTargetLowering();
+  }
   TLInfo = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
   TTI = &getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
   OptSize = F.optForSize();

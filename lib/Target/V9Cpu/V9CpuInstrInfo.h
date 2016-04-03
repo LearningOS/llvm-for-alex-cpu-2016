@@ -29,8 +29,15 @@ namespace llvm {
         unsigned GetInstSizeInBytes(const MachineInstr *MI) const {
             return 4;
         }
-
+        virtual void adjustStackPtr(unsigned SP, int64_t Amount,
+                                    MachineBasicBlock &MBB,
+                                    MachineBasicBlock::iterator I) const = 0;
+        virtual MachineInstr* emitFrameIndexDebugValue(MachineFunction &MF,
+                                                         int FrameIx, uint64_t Offset,
+                                                         const MDNode *MDPtr,
+                                                         DebugLoc DL) const;
     protected:
+        MachineMemOperand *GetMemOperand(MachineBasicBlock &MBB, int FI, unsigned int Flag) const;
     };
     const V9CpuInstrInfo *createV9CpuSEInstrInfo(const V9CpuSubtarget &STI);
 }

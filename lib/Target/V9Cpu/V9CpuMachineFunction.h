@@ -43,12 +43,22 @@ namespace llvm {
 
         ~V9CpuFunctionInfo();
 
+
         int getVarArgsFrameIndex() const { return VarArgsFrameIndex; }
         void setVarArgsFrameIndex(int Index) { VarArgsFrameIndex = Index; }
-
+        unsigned getSRetReturnReg() const { return SRetReturnReg; }
+        void setSRetReturnReg(unsigned Reg) { SRetReturnReg = Reg; }
+        bool hasByvalArg() const { return HasByvalArg; }
+        void setFormalArgInfo(unsigned Size, bool HasByval) {
+            IncomingArgSize = Size;
+            HasByvalArg = HasByval;
+        }
+        unsigned getIncomingArgSize() const { return IncomingArgSize; }
     private:
+        bool HasByvalArg;
+        unsigned IncomingArgSize;
         virtual void anchor();
-
+        unsigned SRetReturnReg;
         MachineFunction& MF;
 
         /// VarArgsFrameIndex - FrameIndex for start of varargs area.
@@ -60,6 +70,7 @@ namespace llvm {
         StringMap<std::unique_ptr<const V9CpuCallEntry>> ExternalCallEntries;
         ValueMap<const GlobalValue *, std::unique_ptr<const V9CpuCallEntry>>
                 GlobalCallEntries;
+
     };
 //@1 }
 

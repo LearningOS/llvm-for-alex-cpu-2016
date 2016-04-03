@@ -29,7 +29,7 @@ using namespace llvm;
 static StringRef selectV9CpuArchFeature(const Triple &TT, StringRef CPU) {
   std::string V9CpuArchFeature;
   if (CPU.empty() || CPU == "v9-generic") {
-    V9CpuArchFeature = "+v9cpui";
+    V9CpuArchFeature = "+v9-generic";
   }
   return V9CpuArchFeature;
 }
@@ -43,7 +43,7 @@ static MCInstrInfo *createV9CpuMCInstrInfo() {
 
 static MCRegisterInfo *createV9CpuMCRegisterInfo(const Triple &TT) {
   MCRegisterInfo *X = new MCRegisterInfo();
-  InitV9CpuMCRegisterInfo(X, V9Cpu::B); // defined in V9CpuGenRegisterInfo.inc
+  InitV9CpuMCRegisterInfo(X, V9Cpu::R7); // defined in V9CpuGenRegisterInfo.inc
   return X;
 }
 
@@ -63,10 +63,10 @@ static MCCodeGenInfo *createV9CpuMCCodeGenInfo(const Triple &TT, Reloc::Model RM
                                               CodeModel::Model CM,
                                               CodeGenOpt::Level OL) {
   MCCodeGenInfo *X = new MCCodeGenInfo();
-  if (CM == CodeModel::JITDefault)
-    RM = Reloc::Static;
-  else if (RM == Reloc::Default)
-    RM = Reloc::PIC_;
+//  if (CM == CodeModel::JITDefault)
+//    RM = Reloc::Static;
+//  else if (RM == Reloc::Default)
+//    RM = Reloc::PIC_;
   X->initMCCodeGenInfo(RM, CM, OL); // defined in lib/MC/MCCodeGenInfo.cpp
   return X;
 }

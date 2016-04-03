@@ -56,7 +56,9 @@ namespace llvm {
         V9CpuSubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
                       bool little, const V9CpuTargetMachine &_TM);
         const V9CpuInstrInfo *getInstrInfo() const override { return InstrInfo.get(); }
-
+        const TargetFrameLowering *getFrameLowering() const override {
+            return FrameLowering.get();
+        }
         const V9CpuRegisterInfo *getRegisterInfo() const override {
             return &InstrInfo->getRegisterInfo();
         }

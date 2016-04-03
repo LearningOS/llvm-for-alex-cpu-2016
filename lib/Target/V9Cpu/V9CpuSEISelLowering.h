@@ -27,6 +27,8 @@ namespace llvm {
     SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
   private:
   };
+  const V9CpuTargetLowering *
+    createV9CpuSETargetLowering(const V9CpuTargetMachine &TM, const V9CpuSubtarget &STI);
 }
 
 #endif // V9CpuISEISELLOWERING_H

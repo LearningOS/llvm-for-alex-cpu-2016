@@ -38,9 +38,9 @@ const V9CpuSubtarget *V9CpuTargetMachine::getSubtargetImpl(const Function &F) co
                      ? FSAttr.getValueAsString().str()
                      : TargetFS;
     resetTargetOptions(F);
-    auto I = llvm::make_unique<V9CpuSubtarget>(TargetTriple, CPU, FS, true,
+    auto I = new V9CpuSubtarget(TargetTriple, CPU, FS, true,
                                          *this);
-    return I.get();
+    return I;
 }
 
 

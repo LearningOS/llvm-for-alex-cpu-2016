@@ -27,6 +27,7 @@ add_llvm_target(V9CpuCodeGen
         V9CpuMachineFunction.cpp
         V9CpuISelDAGToDAG.cpp
         V9CpuSEISelDAGToDAG.cpp
+        V9CpuAnalyzeImmediate.cpp
         )
 
 add_subdirectory(TargetInfo)

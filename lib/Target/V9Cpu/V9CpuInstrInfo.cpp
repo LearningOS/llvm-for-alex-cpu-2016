@@ -22,3 +22,22 @@ V9CpuInstrInfo::V9CpuInstrInfo(const V9CpuSubtarget &STI)
 const V9CpuInstrInfo *V9CpuInstrInfo::create(V9CpuSubtarget &STI) {
     return llvm::createV9CpuSEInstrInfo(STI);
 }
+
+MachineInstr*
+V9CpuInstrInfo::emitFrameIndexDebugValue(MachineFunction &MF, int FrameIx,
+                                        uint64_t Offset, const MDNode *MDPtr,
+                                        DebugLoc DL) const {
+  MachineInstrBuilder MIB = BuildMI(MF, DL, get(V9Cpu::DBG_VALUE))
+    .addFrameIndex(FrameIx).addImm(0).addImm(Offset).addMetadata(MDPtr);
+  return &*MIB;
+}
+
+MachineMemOperand *V9CpuInstrInfo::GetMemOperand(MachineBasicBlock &MBB, int FI,
+                                                unsigned Flag) const {
+    MachineFunction &MF = *MBB.getParent();
+    MachineFrameInfo &MFI = *MF.getFrameInfo();
+    unsigned Align = MFI.getObjectAlignment(FI);
+
+    return MF.getMachineMemOperand(MachinePointerInfo::getFixedStack(MF, FI, 0), Flag,
+                                   MFI.getObjectSize(FI), Align);
+}
