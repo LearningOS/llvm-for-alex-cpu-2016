@@ -255,4 +255,4 @@ def : Pat<(brcond RC:$cond, bb:$dst),
           (JNEOp (CMPOp RC:$cond, ZERO), bb:$dst)>;
 }
 
-defm : BrcondPatsCmp<Int32Regs, BNZ, CMP>;
+defm : BrcondPatsCmp<Int32Regs, BNZ, SUBrru>;
