@@ -21,10 +21,10 @@ let Namespace = "V9Cpu" in {
   def TSP   : V9GPReg<12,  "tpc">,   DwarfRegNum<[12]>;
   def PC    : V9GPReg<13,  "pc">,    DwarfRegNum<[13]>;
   def SP    : V9GPReg<14,  "sp">,    DwarfRegNum<[14]>;
-  def FLAGS : V9GPReg<15,  "flags">,  DwarfRegNum<[15]>;
+  def ZERO : V9GPReg<15,  "zero">,  DwarfRegNum<[15]>;
 }
-def Int32Regs   : RegisterClass<"V9Cpu", [i32], 32, (add R0, R1, R2, R3, R4, R5, R6, R7)>;
+def Int32Regs   : RegisterClass<"V9Cpu", [i32], 32, (add R0, R1, R2, R3, R4, R5, R6, R7, ZERO)>;
 def IntRegs     : RegisterClass<"V9Cpu", [i32], 32, (add R0, R1, R2, R3)>;
 def ARegs       : RegisterClass<"V9Cpu", [i32], 32, (add R0, R1)>;
 def FloatRegs   : RegisterClass<"V9Cpu", [f64], 64, (add F, G)>;
-def ControlRegs : RegisterClass<"V9Cpu", [i32], 32, (add PC, SP, TSP, FLAGS)>;
+def ControlRegs : RegisterClass<"V9Cpu", [i32], 32, (add PC, SP, TSP)>;

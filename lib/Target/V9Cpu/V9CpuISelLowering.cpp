@@ -47,7 +47,7 @@ const char *V9CpuTargetLowering::getTargetNodeName(unsigned Opcode) const {
 V9CpuTargetLowering::V9CpuTargetLowering(const V9CpuTargetMachine &TM,
                                        const V9CpuSubtarget &STI)
         : TargetLowering(TM), Subtarget(STI), ABI(TM.getABI()) {
-
+    setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
 }
 
 const V9CpuTargetLowering *V9CpuTargetLowering::create(const V9CpuTargetMachine &TM,

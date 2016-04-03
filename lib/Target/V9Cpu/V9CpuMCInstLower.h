@@ -16,8 +16,10 @@ namespace llvm {
 //@1 {
 /// This class is used to lower an MachineInstr into an MCInst.
     class LLVM_LIBRARY_VISIBILITY V9CpuMCInstLower {
-//@2
         typedef MachineOperand::MachineOperandType MachineOperandType;
+        MCOperand LowerSymbolOperand(const MachineOperand &MO,
+                                                       MachineOperandType MOTy,
+                                                       unsigned Offset) const;
         MCContext *Ctx;
         V9CpuAsmPrinter &AsmPrinter;
     public:

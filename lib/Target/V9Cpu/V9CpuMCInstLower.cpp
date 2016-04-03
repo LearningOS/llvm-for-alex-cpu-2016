@@ -42,7 +42,43 @@ static void CreateMCInst(MCInst& Inst, unsigned Opc, const MCOperand& Opnd0,
     if (Opnd2.isValid())
         Inst.addOperand(Opnd2);
 }
+MCOperand V9CpuMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
+                                              MachineOperandType MOTy,
+                                              unsigned Offset) const {
+    MCSymbolRefExpr::VariantKind Kind = MCSymbolRefExpr::VK_None;
+    const MCSymbol *Symbol;
+    switch (MOTy) {
+        case MachineOperand::MO_GlobalAddress:
+            Symbol = AsmPrinter.getSymbol(MO.getGlobal());
+            break;
+        case MachineOperand::MO_MachineBasicBlock:
+            Symbol = MO.getMBB()->getSymbol();
+            break;
 
+        case MachineOperand::MO_BlockAddress:
+            Symbol = AsmPrinter.GetBlockAddressSymbol(MO.getBlockAddress());
+            Offset += MO.getOffset();
+            break;
+        case MachineOperand::MO_JumpTableIndex:
+            Symbol = AsmPrinter.GetJTISymbol(MO.getIndex());
+            break;
+
+        default:
+            llvm_unreachable("<unknown operand type>");
+    }
+
+    const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, Kind, *Ctx);
+
+    if (!Offset)
+        return MCOperand::createExpr(MCSym);
+
+    // Assume offset is never negative.
+    assert(Offset > 0);
+
+    const MCConstantExpr *OffsetExpr =  MCConstantExpr::create(Offset, *Ctx);
+    const MCBinaryExpr *AddExpr = MCBinaryExpr::createAdd(MCSym, OffsetExpr, *Ctx);
+    return MCOperand::createExpr(AddExpr);
+}
 //@LowerOperand {
 MCOperand V9CpuMCInstLower::LowerOperand(const MachineOperand& MO,
                                         unsigned offset) const {
@@ -59,6 +95,10 @@ MCOperand V9CpuMCInstLower::LowerOperand(const MachineOperand& MO,
             return MCOperand::createImm(MO.getImm() + offset);
         case MachineOperand::MO_RegisterMask:
             break;
+        case MachineOperand::MO_MachineBasicBlock:
+        case MachineOperand::MO_JumpTableIndex:
+        case MachineOperand::MO_BlockAddress:
+            return LowerSymbolOperand(MO, MOTy, offset);
     }
 
     return MCOperand();

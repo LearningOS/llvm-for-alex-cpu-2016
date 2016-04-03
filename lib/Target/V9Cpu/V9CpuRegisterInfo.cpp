@@ -31,7 +31,7 @@ V9CpuRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
 BitVector V9CpuRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     BitVector Reserved(getNumRegs());
     Reserved.set(V9Cpu::PC);
-    Reserved.set(V9Cpu::FLAGS);
+    Reserved.set(V9Cpu::ZERO);
     return Reserved;
 }
 

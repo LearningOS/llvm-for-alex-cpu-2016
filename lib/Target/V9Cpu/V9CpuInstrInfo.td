@@ -49,7 +49,7 @@ def mem : Operand<iPTR> {
 // Node immediate fits as 16-bit sign extended on target immediate.
 // e.g. addi, andi
 def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
-
+def immSExt32  : PatLeaf<(imm), [{ return isInt<32>(N->getSExtValue()); }]>;
 // V9Cpu Address Mode! SDNode frameindex could possibily be a match
 // since load and store instructions from stack used it.
 def addr : 
@@ -85,6 +85,13 @@ class ArithLogicI<bits<8> op, string instr_asm, SDNode OpNode,
   FL<op, (outs IntRegs:$ra), (ins RC:$rb, Od:$imm16),
      !strconcat(instr_asm, "\t$ra, $rb, $imm16"),
      [(set IntRegs:$ra, (OpNode RC:$rb, imm_type:$imm16))], IIAlu> {
+  let isReMaterializable = 1;
+}
+class ArithLogicII<bits<8> op, string instr_asm, SDNode OpNode,
+                  Operand Od, PatLeaf imm_type, RegisterClass RC> :
+  FL<op, (outs IntRegs:$ra), (ins RC:$rb, RC:$rc),
+     !strconcat(instr_asm, "\t$ra, $rb, $rc"),
+     [(set IntRegs:$ra, (OpNode RC:$rb, RC:$rc))], IIAlu> {
   let isReMaterializable = 1;
 }
 
@@ -154,23 +161,19 @@ def LI:FL<0xb, (outs Int32Regs:$ra),
     (ins simm16:$imm), "li $ra, $imm",
      [(set Int32Regs:$ra, (load imm:$imm))], IILoad>;
 
-def MYSTORE:  FMem<2, (outs), (ins Int32Regs:$ra, mem:$addr),
-     !strconcat("st1", "\t$ra, $addr"),
-     [(store_a Int32Regs:$ra, addr:$addr)], IIStore>;
-
-/*def MYSTOREIMM16:  FMem<3, (outs), (ins Int32Regs:$ra, simm16:$imm),
-     !strconcat("st", "\t$ra, $imm"),
-     [(store Int32Regs:$ra, imm:$imm)], IIStore>;*/
-
-//def LI :FMem<0x15, (outs), (ins Int32Regs:$ra, simm16:$imm),
-//             !strconcat("li", "\t$ra, $imm"),
-//             [], IILoad>;
-
 /// Arithmetic Instructions (ALU Immediate)
 // IR "add" defined in include/llvm/Target/TargetSelectionDAG.td, line 315 (def add).
 def ADDiu   : ArithLogicI<0x09, "addiu", add, simm16, immSExt16, Int32Regs>;
-
-
+def SUBiu   : ArithLogicI<0x0a, "subiu", sub, simm16, immSExt16, Int32Regs>;
+def MULiu   : ArithLogicI<0x10, "muliu", mul, simm16, immSExt16, Int32Regs>;
+def MULHSiu   : ArithLogicI<0x17, "mulhsiu", mulhs, simm16, immSExt16, Int32Regs>;
+def SDIViu   : ArithLogicI<0x11, "diviu", sdiv, simm16, immSExt16, Int32Regs>;
+def SREMiu   : ArithLogicI<0x12, "modiu", srem, simm16, immSExt16, Int32Regs>;
+def ADDrru  : ArithLogicII<0x13, "addrru", add, simm16, immSExt16, Int32Regs>;
+def SUBrru  : ArithLogicII<0x14, "subrru", sub, simm16, immSExt16, Int32Regs>;
+def MULHSru   : ArithLogicII<0x18, "mulhsru", mulhs, simm16, immSExt16, Int32Regs>;
+def SRiu  : ArithLogicI<0x15, "sriu", sra, simm16, immSExt16, Int32Regs>;
+def SLiu  : ArithLogicI<0x16, "sliu", srl, simm16, immSExt16, Int32Regs>;
 /// Arithmetic Instructions (3-Operand, R-Type)
 
 /// Shift Instructions
@@ -190,6 +193,47 @@ def RET:
     let hasExtraSrcRegAllocReq = 1;
 }
 
+def brtarget24    : Operand<OtherVT> {
+  let EncoderMethod = "getBranch24TargetOpValue";
+  let OperandType = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeBranch24Target";
+}
+
+class CBranch24<bits<8> op, string instr_asm, RegisterClass RC,
+                   list<Register> UseRegs>:
+  FJ<op, (outs), (ins RC:$ra, brtarget24:$addr),
+             !strconcat(instr_asm, "\t$ra, $addr"),
+             [], IIBranch> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let hasDelaySlot = 1;
+}
+def BNZ     : CBranch24<0x31, "bnz", Int32Regs, []>;
+def jmptarget    : Operand<OtherVT> {
+  let EncoderMethod = "getJumpTargetOpValue";
+  let OperandType = "OPERAND_PCREL";
+}
+
+class UncondBranch<bits<8> op, string instr_asm>:
+  FJ<op, (outs), (ins jmptarget:$addr),
+             !strconcat(instr_asm, "\t$addr"), [(br bb:$addr)], IIBranch> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
+}
+def JMP     : UncondBranch<0x36, "jmp">;
+
+class CmpInstr<bits<8> op, string instr_asm,
+               InstrItinClass itin, RegisterClass RC, RegisterClass RD,
+               bit isComm = 0>:
+  FA<op, (outs RD:$ra), (ins RC:$rb, RC:$rc),
+     !strconcat(instr_asm, "\t$ra, $rb, $rc"), [], itin> {
+  let shamt = 0;
+  let isCommutable = isComm;
+}
+def CMP     : CmpInstr<0x30, "cmp", IIAlu, Int32Regs, Int32Regs, 0>;
+
 /// No operation
 let addr=0 in
   def NOP   : FJ<0, (outs), (ins), "nop", [], IIAlu>;
@@ -200,5 +244,15 @@ let addr=0 in
 
 // Small immediates
 def : Pat<(i32 immSExt16:$in),
-          (ADDiu R1, imm:$in)>;
-//def : Pat<load
+          (ADDiu ZERO, imm:$in)>;
+def : Pat<(i32 immSExt32:$in),
+          (ADDiu ZERO, imm:$in)>;
+
+multiclass BrcondPatsCmp<RegisterClass RC, Instruction JNEOp, Instruction CMPOp> {
+def : Pat<(brcond (i32 (setne RC:$lhs, RC:$rhs)), bb:$dst),
+          (JNEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
+def : Pat<(brcond RC:$cond, bb:$dst),
+          (JNEOp (CMPOp RC:$cond, ZERO), bb:$dst)>;
+}
+
+defm : BrcondPatsCmp<Int32Regs, BNZ, CMP>;

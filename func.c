@@ -1,6 +1,6 @@
-int func(int a) {
-  int b = 0;
-  a += 1;
-  b = a;
-  return b;
+int func(int a, int b) {
+  if (a == 30) {
+    a += 100;
+  }
+  return a;
 }

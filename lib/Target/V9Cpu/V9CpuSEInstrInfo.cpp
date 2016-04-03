@@ -108,7 +108,7 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
 
   unsigned Opc = 0;
 
-  Opc = V9Cpu::MYSTORE;
+  Opc = V9Cpu::ST;
   assert(Opc && "Register class not handled!");
   BuildMI(MBB, I, DL, get(Opc)).addReg(SrcReg, getKillRegState(isKill))
           .addFrameIndex(FI).addImm(0).addMemOperand(MMO);
