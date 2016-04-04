@@ -1,0 +1,7 @@
+[component_0]
+type = Library
+name = AlexDesc
+parent = Alex
+required_libraries = MC
+                     Support
+add_to_library_groups = Alex

@@ -2,7 +2,7 @@
 
 include "llvm/Target/Target.td"
 
-def archInstrInfo : InstrInfo { }
+def archInstrInfo : instrInfo { }
 
 def arch : Target {
   let InstructionSet = archInstrInfo;

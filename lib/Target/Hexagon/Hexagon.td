@@ -228,7 +228,7 @@ include "HexagonInstrInfo.td"
 include "HexagonIntrinsics.td"
 include "HexagonIntrinsicsDerived.td"
 
-def HexagonInstrInfo : InstrInfo;
+def HexagonInstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // Hexagon processors supported.

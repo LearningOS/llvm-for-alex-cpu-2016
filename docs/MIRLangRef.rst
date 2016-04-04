@@ -292,7 +292,7 @@ defined register operands:
     %sp, %fp, %lr = LDPXpost %sp, 2
 
 The instruction names are serialized using the exact definitions from the
-target's ``*InstrInfo.td`` files, and they are case sensitive. This means that
+target's ``*instrInfo.td`` files, and they are case sensitive. This means that
 similar instruction names like ``TSTri`` and ``tSTRi`` represent different
 machine instructions.
 

@@ -202,7 +202,7 @@ simply return a class member.
   class SparcTargetMachine : public LLVMTargetMachine {
     const DataLayout DataLayout;       // Calculates type size & alignment
     SparcSubtarget Subtarget;
-    SparcInstrInfo InstrInfo;
+    SparcInstrInfo instrInfo;
     TargetFrameInfo FrameInfo;
 
   protected:
@@ -211,11 +211,11 @@ simply return a class member.
   public:
     SparcTargetMachine(const Module &M, const std::string &FS);
 
-    virtual const SparcInstrInfo *getInstrInfo() const {return &InstrInfo; }
+    virtual const SparcInstrInfo *getInstrInfo() const {return &instrInfo; }
     virtual const TargetFrameInfo *getFrameInfo() const {return &FrameInfo; }
     virtual const TargetSubtarget *getSubtargetImpl() const{return &Subtarget; }
     virtual const TargetRegisterInfo *getRegisterInfo() const {
-      return &InstrInfo.getRegisterInfo();
+      return &instrInfo.getRegisterInfo();
     }
     virtual const DataLayout *getDataLayout() const { return &DataLayout; }
     static unsigned getModuleMatchQuality(const Module &M);
@@ -254,7 +254,7 @@ the following:
 
   SparcTargetMachine::SparcTargetMachine(const Module &M, const std::string &FS)
     : DataLayout("E-p:32:32-f128:128:128"),
-      Subtarget(M, FS), InstrInfo(Subtarget),
+      Subtarget(M, FS), instrInfo(Subtarget),
       FrameInfo(TargetFrameInfo::StackGrowsDown, 8, 0) {
   }
 
@@ -669,7 +669,7 @@ types are described in the ``include/llvm/CodeGen/SelectionDAGNodes.h`` file
 TableGen uses the following target description (``.td``) input files to
 generate much of the code for instruction definition:
 
-* ``Target.td`` --- Where the ``Instruction``, ``Operand``, ``InstrInfo``, and
+* ``Target.td`` --- Where the ``Instruction``, ``Operand``, ``instrInfo``, and
   other fundamental classes are defined.
 
 * ``TargetSelectionDAG.td`` --- Used by ``SelectionDAG`` instruction selection

@@ -22,7 +22,7 @@ include "LanaiRegisterInfo.td"
 include "LanaiCallingConv.td"
 include "LanaiInstrInfo.td"
 
-def LanaiInstrInfo : InstrInfo;
+def LanaiInstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // Lanai processors supported.

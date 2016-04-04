@@ -51,7 +51,7 @@ include "SparcRegisterInfo.td"
 include "SparcCallingConv.td"
 include "SparcInstrInfo.td"
 
-def SparcInstrInfo : InstrInfo;
+def SparcInstrInfo : instrInfo;
 
 def SparcAsmParser : AsmParser {
   bit ShouldEmitMatchRegisterName = 0;

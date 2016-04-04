@@ -48,7 +48,7 @@ include "MSP430CallingConv.td"
 
 include "MSP430InstrInfo.td"
 
-def MSP430InstrInfo : InstrInfo;
+def MSP430InstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // Target Declaration

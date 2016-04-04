@@ -42,7 +42,7 @@ include "WebAssemblyRegisterInfo.td"
 
 include "WebAssemblyInstrInfo.td"
 
-def WebAssemblyInstrInfo : InstrInfo;
+def WebAssemblyInstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // WebAssembly Processors supported.

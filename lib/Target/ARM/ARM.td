@@ -726,7 +726,7 @@ include "ARMCallingConv.td"
 
 include "ARMInstrInfo.td"
 
-def ARMInstrInfo : InstrInfo;
+def ARMInstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // Declare the target which we are implementing

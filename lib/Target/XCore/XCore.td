@@ -25,7 +25,7 @@ include "XCoreRegisterInfo.td"
 include "XCoreInstrInfo.td"
 include "XCoreCallingConv.td"
 
-def XCoreInstrInfo : InstrInfo;
+def XCoreInstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // XCore processors supported.

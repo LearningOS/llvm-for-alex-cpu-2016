@@ -399,7 +399,7 @@ class InstRW<list<SchedReadWrite> rw, dag instrlist> {
 
 // Map a set of itinerary classes to SchedReadWrite resources. This is
 // used to bootstrap a target (e.g. ARM) when itineraries already
-// exist and changing InstrInfo is undesirable.
+// exist and changing instrInfo is undesirable.
 //
 // SchedModel ties this ItineraryClass mapping to a processor.
 class ItinRW<list<SchedReadWrite> rw, list<InstrItinClass> iic> {

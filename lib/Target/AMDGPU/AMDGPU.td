@@ -319,7 +319,7 @@ def FeatureVolcanicIslands : SubtargetFeatureGeneration<"VOLCANIC_ISLANDS",
 
 //===----------------------------------------------------------------------===//
 
-def AMDGPUInstrInfo : InstrInfo {
+def AMDGPUInstrInfo : instrInfo {
   let guessInstructionProperties = 1;
   let noNamedPositionallyEncodedOperands = 1;
 }

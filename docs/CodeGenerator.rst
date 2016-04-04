@@ -344,7 +344,7 @@ of operands.
 
 The opcode number is a simple unsigned integer that only has meaning to a
 specific backend.  All of the instructions for a target should be defined in the
-``*InstrInfo.td`` file for the target. The opcode enum values are auto-generated
+``*instrInfo.td`` file for the target. The opcode enum values are auto-generated
 from this description.  The ``MachineInstr`` class does not have any information
 about how to interpret the instruction (i.e., what the semantics of the
 instruction are); for that you must refer to the :raw-html:`<tt>`

@@ -82,7 +82,7 @@ include "AArch64CallingConvention.td"
 include "AArch64Schedule.td"
 include "AArch64InstrInfo.td"
 
-def AArch64InstrInfo : InstrInfo;
+def AArch64InstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // AArch64 Processors supported.

@@ -43,7 +43,7 @@ include "SystemZInstrInfo.td"
 include "SystemZInstrVector.td"
 include "SystemZInstrFP.td"
 
-def SystemZInstrInfo : InstrInfo {}
+def SystemZInstrInfo : instrInfo {}
 
 //===----------------------------------------------------------------------===//
 // Assembly parser

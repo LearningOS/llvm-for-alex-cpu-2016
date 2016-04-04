@@ -724,10 +724,10 @@ class OptionalDefOperand<ValueType ty, dag OpTypes, dag defaultops>
 }
 
 
-// InstrInfo - This class should only be instantiated once to provide parameters
+// instrInfo - This class should only be instantiated once to provide parameters
 // which are global to the target machine.
 //
-class InstrInfo {
+class instrInfo {
   // Target can specify its instructions in either big or little-endian formats.
   // For instance, while both Sparc and PowerPC are big-endian platforms, the
   // Sparc manual specifies its instructions in the format [31..0] (big), while
@@ -1122,7 +1122,7 @@ def DefaultAsmWriter : AsmWriter;
 //
 class Target {
   // InstructionSet - Instruction set description for this target.
-  InstrInfo InstructionSet;
+  instrInfo InstructionSet;
 
   // AssemblyParsers - The AsmParser instances available for this target.
   list<AsmParser> AssemblyParsers = [DefaultAsmParser];

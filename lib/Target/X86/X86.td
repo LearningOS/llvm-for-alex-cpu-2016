@@ -746,7 +746,7 @@ include "X86RegisterInfo.td"
 
 include "X86InstrInfo.td"
 
-def X86InstrInfo : InstrInfo;
+def X86InstrInfo : instrInfo;
 
 //===----------------------------------------------------------------------===//
 // Calling Conventions

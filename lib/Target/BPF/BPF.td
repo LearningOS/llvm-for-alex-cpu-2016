@@ -13,7 +13,7 @@ include "BPFRegisterInfo.td"
 include "BPFCallingConv.td"
 include "BPFInstrInfo.td"
 
-def BPFInstrInfo : InstrInfo;
+def BPFInstrInfo : instrInfo;
 
 class Proc<string Name, list<SubtargetFeature> Features>
  : Processor<Name, NoItineraries, Features>;

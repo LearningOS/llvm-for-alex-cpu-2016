@@ -73,7 +73,7 @@ def : Proc<"sm_52", [SM52, PTX41]>;
 def : Proc<"sm_53", [SM53, PTX42]>;
 
 
-def NVPTXInstrInfo : InstrInfo {
+def NVPTXInstrInfo : instrInfo {
 }
 
 def NVPTX : Target {

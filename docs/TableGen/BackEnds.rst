@@ -94,7 +94,7 @@ properties, masks, etc.
 and source files) with macros defining in which they are for declaration vs.
 initialization issues.
 
-InstrInfo
+instrInfo
 ---------
 
 **Purpose**: This tablegen backend is responsible for emitting a description of the target
@@ -183,7 +183,7 @@ to functional units as instructions are added to a packet.
 
 **Output**: Scheduling tables for GPU back-ends (Hexagon, AMD).
 
-**Usage**: Included directly on ``<Target>InstrInfo.cpp``.
+**Usage**: Included directly on ``<Target>instrInfo.cpp``.
 
 FastISel
 --------

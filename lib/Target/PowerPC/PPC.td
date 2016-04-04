@@ -407,7 +407,7 @@ def : ProcessorModel<"ppc64le", P8Model, ProcessorFeatures.Power8FeatureList>;
 
 include "PPCCallingConv.td"
 
-def PPCInstrInfo : InstrInfo {
+def PPCInstrInfo : instrInfo {
   let isLittleEndianEncoding = 1;
 
   // FIXME: Unset this when no longer needed!
