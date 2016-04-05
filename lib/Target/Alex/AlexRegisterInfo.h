@@ -2,7 +2,7 @@
 #define LLVM_LIB_TARGET_ALEX_ALEXREGISTERINFO_H
 
 #include "llvm/Target/TargetRegisterInfo.h"
-
+#define GET_REGINFO_ENUM
 #define GET_REGINFO_HEADER
 #include "AlexGenRegisterInfo.inc"
 

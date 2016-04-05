@@ -6,12 +6,13 @@
 #include "llvm/Target/TargetInstrInfo.h"
 
 #define GET_INSTRINFO_HEADER
+#define GET_INSTRINFO_ENUM
 #include "AlexGenInstrInfo.inc"
 
 namespace llvm {
 
     class AlexInstrInfo : public AlexGenInstrInfo {
-        virtual void anchor();
+        virtual void anchor() { }
     protected:
         const AlexSubtarget *subtarget;
     public:

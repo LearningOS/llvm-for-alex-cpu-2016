@@ -42,14 +42,12 @@ namespace llvm {
         const InstrItineraryData *getInstrItineraryData() const override {
             return instrItineraryData;
         }
+
+        // generate by td
+        void ParseSubtargetFeatures(StringRef CPU, StringRef FS);
     private:
         virtual void anchor() {}
     protected:
-        enum AlexArchEnum {
-            AlexA1
-        };
-
-        AlexArchEnum archVersion;
         Triple targetTriple;
 
         const AlexTargetMachine *targetMachine;
@@ -67,14 +65,20 @@ namespace llvm {
                         StringRef fs, const TargetOptions &options,
                         Reloc::Model RM, CodeModel::Model CM, CodeGenOpt::Level OL);
         ~AlexTargetMachine() override {}
-//        TargetLoweringObjectFile *getObjFileLowering() const override {
-//            return TLOF.get();
-//        }
         const AlexSubtarget *getSubtargetImpl(const Function &F) const override {
+            return getSubtargetImpl();
+        }
+        // for asm printer
+        const AlexSubtarget *getSubtargetImpl() const {
             return defaultSubtarget;
+        }
+        TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
+        TargetLoweringObjectFile *getObjFileLowering() const override {
+            return targetLoweringObjectFile;
         }
     private:
         AlexSubtarget* defaultSubtarget;
+        TargetLoweringObjectFile *targetLoweringObjectFile;
     };
 
 } // end namespace llvm

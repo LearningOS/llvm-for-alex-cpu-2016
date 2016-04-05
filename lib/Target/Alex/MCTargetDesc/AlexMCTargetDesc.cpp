@@ -1,5 +1,7 @@
 #include <AlexTargetMachine.h>
 #include "AlexFrameLowering.h"
+#include "InstPrinter/AlexInstPrinter.h"
+#include "AlexMCAsmInfo.h"
 #include "llvm/MC/MachineLocation.h"
 #include "llvm/MC/MCCodeGenInfo.h"
 #include "llvm/MC/MCELFStreamer.h"
@@ -14,7 +16,6 @@
 #include "llvm/Support/TargetRegistry.h"
 using namespace llvm;
 
-#define GET_REGINFO_ENUM
 #define GET_REGINFO_MC_DESC
 #include "AlexGenRegisterInfo.inc"
 
@@ -71,30 +72,30 @@ static MCCodeGenInfo *createAlexMCCodeGenInfo(const Triple &TT, Reloc::Model RM,
     return X;
 }
 
-//MCAsmInfo *createAlexMCAsmInfo(const MCRegisterInfo &MRI,
-//                                const Triple &TT) {
-//    MCAsmInfo *MAI = new AlexMCAsmInfo(TT);
-//
-//    unsigned SP = MRI.getDwarfRegNum(Alex::SP, true);
-//    MCCFIInstruction Inst = MCCFIInstruction::createDefCfa(nullptr, SP, 0);
-//    MAI->addInitialFrameState(Inst);
-//
-//    return MAI;
-//}
+MCAsmInfo *createAlexMCAsmInfo(const MCRegisterInfo &MRI,
+                                const Triple &TT) {
+    MCAsmInfo *MAI = new AlexMCAsmInfo(TT);
 
-//static MCInstPrinter *createAlexMCInstPrinter(const Triple &T,
-//                                               unsigned SyntaxVariant,
-//                                               const MCAsmInfo &MAI,
-//                                               const MCInstrInfo &MII,
-//                                               const MCRegisterInfo &MRI) {
-//    return new AlexInstPrinter(MAI, MII, MRI);
-//}
+    unsigned SP = MRI.getDwarfRegNum(Alex::SP, true);
+    MCCFIInstruction Inst = MCCFIInstruction::createDefCfa(nullptr, SP, 0);
+    MAI->addInitialFrameState(Inst);
+
+    return MAI;
+}
+
+static MCInstPrinter *createAlexMCInstPrinter(const Triple &T,
+                                               unsigned SyntaxVariant,
+                                               const MCAsmInfo &MAI,
+                                               const MCInstrInfo &MII,
+                                               const MCRegisterInfo &MRI) {
+    return new AlexInstPrinter(MAI, MII, MRI);
+}
 
 //@2 {
 extern "C" void LLVMInitializeAlexTargetMC() {
     for (Target *T : {&TheAlexTarget, &TheAlexTarget}) {
         // Register the MC asm info.
-//        RegisterMCAsmInfoFn X(*T, createAlexMCAsmInfo);
+        RegisterMCAsmInfoFn X(*T, createAlexMCAsmInfo);
 
         // Register the MC codegen info.
         TargetRegistry::RegisterMCCodeGenInfo(*T,
@@ -110,8 +111,8 @@ extern "C" void LLVMInitializeAlexTargetMC() {
         TargetRegistry::RegisterMCSubtargetInfo(*T,
                                                 createAlexMCSubtargetInfo);
         // Register the MCInstPrinter.
-       // TargetRegistry::RegisterMCInstPrinter(*T,
-       //                                       createAlexMCInstPrinter);
+        TargetRegistry::RegisterMCInstPrinter(*T,
+                                              createAlexMCInstPrinter);
     }
 
 }

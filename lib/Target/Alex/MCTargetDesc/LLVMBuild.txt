@@ -4,4 +4,5 @@ name = AlexDesc
 parent = Alex
 required_libraries = MC
                      Support
+                     AlexAsmPrinter
 add_to_library_groups = Alex

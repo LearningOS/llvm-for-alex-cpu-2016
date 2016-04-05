@@ -4,29 +4,25 @@ tablegen(LLVM AlexGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM AlexGenInstrInfo.inc -gen-instr-info)
 #tablegen(LLVM AlexGenDisassemblerTables.inc -gen-disassembler)
 #tablegen(LLVM AlexGenMCCodeEmitter.inc -gen-emitter)
-#tablegen(LLVM AlexGenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM AlexGenAsmWriter.inc -gen-asm-writer)
 #tablegen(LLVM AlexGenAsmMatcher.inc -gen-asm-matcher)
-#tablegen(LLVM AlexGenDAGISel.inc -gen-dag-isel)
+tablegen(LLVM AlexGenDAGISel.inc -gen-dag-isel)
 tablegen(LLVM AlexGenSubtargetInfo.inc -gen-subtarget)
 tablegen(LLVM AlexGenCallingConv.inc -gen-callingconv)
 add_public_tablegen_target(AlexCommonTableGen)
 
 add_llvm_target(AlexCodeGen
-#        DelaySlotFiller.cpp
-#        AlexAsmPrinter.cpp
+        AlexAsmPrinter.cpp
         AlexInstrInfo.cpp
-#        AlexISelDAGToDAG.cpp
+        AlexISelDAGToDAG.cpp
         AlexISelLowering.cpp
         AlexFrameLowering.cpp
 #        AlexMachineFunctionInfo.cpp
         AlexRegisterInfo.cpp
         AlexTargetMachine.cpp
 #        AlexMCInstLower.cpp
-#        AlexTargetObjectFile.cpp
+        AlexTargetObjectFile.cpp
         )
 
-#add_subdirectory(TargetInfo)
 add_subdirectory(MCTargetDesc)
-#add_subdirectory(InstPrinter)
-#add_subdirectory(AsmParser)
-#add_subdirectory(Disassembler)
+add_subdirectory(InstPrinter)
