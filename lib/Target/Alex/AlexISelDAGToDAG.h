@@ -26,16 +26,7 @@ private:
   #include "AlexGenDAGISel.inc"
 
   SDNode *Select(SDNode *N) override;
-
-  virtual std::pair<bool, SDNode*> selectNode(SDNode *Node);
-
   // Complex Pattern.
-  //bool SelectAddr(SDNode *Parent, SDValue N, SDValue &Base, SDValue &Offset);
-
-  // getImm - Return a target constant with the specified value.
-//  inline SDValue getImm(const SDNode *Node, unsigned Imm) {
-//    return CurDAG->getTargetConstant(Imm, SDLoc(Node), Node->getValueType(0));
-//  }
 };
 }
 

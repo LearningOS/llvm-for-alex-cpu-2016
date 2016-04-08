@@ -27,6 +27,7 @@ const uint32_t *AlexRegisterInfo::getCallPreservedMask(const MachineFunction &MF
 }
 BitVector AlexRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     BitVector Reserved(getNumRegs());
+    Reserved.set(Alex::SP);
     Reserved.set(Alex::PC);
     Reserved.set(Alex::ZERO);
     return Reserved;

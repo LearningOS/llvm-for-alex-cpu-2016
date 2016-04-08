@@ -39,12 +39,13 @@ const char *AlexTargetLowering::getTargetNodeName(unsigned Opcode) const {
 }
 
 AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
-                                         const AlexSubtarget *subtarget)
+                                         const AlexSubtarget *subtarget,
+                                       const AlexRegisterInfo* registerInfo)
         : TargetLowering(*targetMachine), subtarget(subtarget) {
     // disable dag nodes here
     setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
     addRegisterClass(MVT::i32, &Alex::Int32RegsRegClass);
-    computeRegisterProperties(subtarget->getRegisterInfo());
+    computeRegisterProperties(registerInfo);
 }
 
 SDValue AlexTargetLowering::LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,

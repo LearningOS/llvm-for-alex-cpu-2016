@@ -32,10 +32,11 @@ AlexSubtarget::AlexSubtarget(const Triple &TT, const std::string &CPU, const std
               targetMachine(_TM),
               targetTriple(TT),
               instrInfo(new AlexInstrInfo(this)),
-              registerInfo(new AlexRegisterInfo(this)),
-              FrameLowering(new AlexFrameLowering(this)),
-              targetLowering(new AlexTargetLowering(_TM, this))
+              FrameLowering(new AlexFrameLowering(this))
+
 {
+    registerInfo = new AlexRegisterInfo(this);
+    targetLowering = new AlexTargetLowering(_TM, this, registerInfo);
 }
 
 namespace {

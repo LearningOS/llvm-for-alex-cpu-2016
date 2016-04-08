@@ -37,31 +37,6 @@ bool AlexDAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
     return Ret;
 }
 
-std::pair<bool, SDNode*> AlexDAGToDAGISel::selectNode(SDNode *Node) {
-    unsigned Opcode = Node->getOpcode();
-    SDLoc DL(Node);
-
-    ///
-    // Instruction Selection not handled by the auto-generated
-    // tablegen selection should be handled here.
-    ///
-    SDNode *Result;
-
-    ///
-    // Instruction Selection not handled by the auto-generated
-    // tablegen selection should be handled here.
-    ///
-    EVT NodeTy = Node->getValueType(0);
-    unsigned MultOpc;
-
-    switch(Opcode) {
-        default: break;
-
-    }
-
-    return std::make_pair(false, nullptr);
-}
-
 SDNode* AlexDAGToDAGISel::Select(SDNode *Node) {
 
     unsigned Opcode = Node->getOpcode();
@@ -75,12 +50,6 @@ SDNode* AlexDAGToDAGISel::Select(SDNode *Node) {
         Node->setNodeId(-1);
         return nullptr;
     }
-
-    // See if subclasses can handle this node.
-    std::pair<bool, SDNode*> Ret = selectNode(Node);
-
-    if (Ret.first)
-        return Ret.second;
 
     switch(Opcode) {
         default: break;
