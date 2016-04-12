@@ -18,7 +18,7 @@
 ; Please keep these as one per line so that out-of-tree merges
 ; will typically require only insertion of a line.
 [common]
-subdirectories = Alex X86
+subdirectories = Alex X86 Cpu0
 ; AMDGPU
 ; ARM
 ; AArch64

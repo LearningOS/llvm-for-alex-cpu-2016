@@ -1,5 +1,6 @@
 #include "AlexTargetMachine.h"
 #include "AlexISelLowering.h"
+#include "AlexISelDAGToDAG.h"
 #include "AlexRegisterInfo.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/CallingConvLower.h"
@@ -54,10 +55,57 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue Chain, CallingConv::ID 
     return Chain;
 }
 
-SDValue AlexTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
-                                        const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                        const SmallVectorImpl<SDValue> &OutVals, SDLoc dl, SelectionDAG &DAG) const {
-    return Chain;
+SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv, bool isVarArg,
+                                        const SmallVectorImpl<ISD::OutputArg> &outs,
+                                        const SmallVectorImpl<SDValue> &outVals,
+                                        SDLoc dl,
+                                        SelectionDAG &dag) const {
+   /* SmallVector<CCValAssign, 16> RVLocs;
+    MachineFunction &MF = dag.getMachineFunction();
+
+    // CCState - Info about the registers and stack slot.
+    CCState CCInfo(CallConv, isVarArg, MF, RVLocs,
+                   *dag.getContext());
+    ///Cpu0CC Cpu0CCInfo(CallConv, ABI.IsO32(),
+    //                  CCInfo);
+
+    // Analyze return values.
+   // Cpu0CCInfo.analyzeReturn(outs, false, // use soft float
+    //                         MF.getFunction()->getReturnType());
+
+    SDValue Flag;
+    SmallVector<SDValue, 4> RetOps(1, chain);
+
+    // Copy the result values into the output registers.
+    for (unsigned i = 0; i != RVLocs.size(); ++i) {
+        SDValue Val = outVals[i];
+        CCValAssign &VA = RVLocs[i];
+        assert(VA.isRegLoc() && "Can only return in registers!");
+
+        //if (RVLocs[i].getValVT() != RVLocs[i].getLocVT())
+        //    Val = DAG.getNode(ISD::BITCAST, DL, RVLocs[i].getLocVT(), Val);
+
+        chain = dag.getCopyToReg(chain, dl, VA.getLocReg(), Val, Flag);
+
+        // Guarantee that all emitted copies are stuck together with flags.
+        Flag = chain.getValue(1);
+        RetOps.push_back(dag.getRegister(VA.getLocReg(), VA.getLocVT()));
+    }
+
+    RetOps[0] = chain;  // Update chain.
+
+    // Add the flag if we have it.
+    //if (Flag.getNode())
+    //    RetOps.push_back(Flag);
+
+    // Return on Cpu0 is always a "ret $lr"
+    //return DAG.getNode(Cpu0ISD::Ret, DL, MVT::Other, RetOps);
+    // R1 =
+
+    //return dag.getNode(Alex::ADDIU, dl, MVT::Other,
+    //                  chain, dag.getRegister(Alex::LR, MVT::i32));*/
+    return dag.getNode(AlexISD::Ret, dl, MVT::Other,
+                       chain, dag.getRegister(Alex::LR, MVT::i32));
 }
 
 

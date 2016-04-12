@@ -32,7 +32,8 @@ AlexSubtarget::AlexSubtarget(const Triple &TT, const std::string &CPU, const std
               targetMachine(_TM),
               targetTriple(TT),
               instrInfo(new AlexInstrInfo(this)),
-              FrameLowering(new AlexFrameLowering(this))
+              FrameLowering(new AlexFrameLowering(this)),
+              instrItineraryData(nullptr)
 
 {
     registerInfo = new AlexRegisterInfo(this);

@@ -1,3 +1,5 @@
 int func() {
-  return 0;
+  int a = 3;
+  a += 5;
+  return a;
 }

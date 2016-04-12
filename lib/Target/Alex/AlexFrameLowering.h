@@ -13,13 +13,16 @@ namespace llvm {
     public:
         explicit AlexFrameLowering(const AlexSubtarget *sti);
         virtual void emitPrologue(MachineFunction &MF,
-                                  MachineBasicBlock &MBB) const override { }
+                                  MachineBasicBlock &MBB) const override;
         virtual void emitEpilogue(MachineFunction &MF,
-                                  MachineBasicBlock &MBB) const override { }
+                                  MachineBasicBlock &MBB) const override;
 
         bool hasFP(const MachineFunction &MF) const override {
-            return false;
+            return true;
         }
+        void determineCalleeSaves(MachineFunction &MF,
+                                                     BitVector &SavedRegs,
+                                                     RegScavenger *RS) const override;
     };
 } // End llvm namespace
 

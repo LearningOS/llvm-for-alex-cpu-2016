@@ -2,7 +2,7 @@
 #define LLVM_LIB_TARGET_ALEX_ALEXINSTRINFO_H
 
 #include "AlexRegisterInfo.h"
-#include "llvm/CodeGen/MachineInstrBuilder.h"
+//#include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/Target/TargetInstrInfo.h"
 
 #define GET_INSTRINFO_HEADER
@@ -23,9 +23,15 @@ namespace llvm {
 //        unsigned GetInstSizeInBytes(const MachineInstr *MI) const override {
 //            return 4;
 //        }
-//        virtual void adjustStackPtr(unsigned SP, int64_t Amount,
-//                                    MachineBasicBlock &MBB,
-//                                    MachineBasicBlock::iterator I) const = 0;
+        MachineMemOperand *GetMemOperand(MachineBasicBlock &MBB, int FI,
+                                                        unsigned Flag) const;
+
+        void adjustStackPtr(unsigned SP, int64_t Amount,
+                                           MachineBasicBlock &MBB,
+                                           MachineBasicBlock::iterator I) const;
+        void storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
+                                unsigned SrcReg, bool isKill, int FI,
+                                const TargetRegisterClass *RC, const TargetRegisterInfo *TRI) const override;
     };
 }
 

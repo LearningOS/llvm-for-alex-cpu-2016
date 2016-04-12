@@ -27,6 +27,7 @@ private:
 
   SDNode *Select(SDNode *N) override;
   // Complex Pattern.
+  bool SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, SDValue &Offset);
 };
 }
 
