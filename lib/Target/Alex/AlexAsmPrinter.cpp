@@ -53,9 +53,9 @@ void AlexAsmPrinter::EmitInstruction(const MachineInstr *MI) {
         if (I->isPseudo())
             llvm_unreachable("Pseudo opcode found in EmitInstruction()");
 
-        //MCInst TmpInst0;
-       // MCInstLowering.Lower(&(*I), TmpInst0);
-        //OutStreamer->EmitInstruction(TmpInst0, getSubtargetInfo());
+        MCInst TmpInst0;
+        MCInstLowering.Lower(&(*I), TmpInst0);
+        OutStreamer->EmitInstruction(TmpInst0, getSubtargetInfo());
     } while ((++I != E) && I->isInsideBundle()); // Delay slot check
 }
 //@EmitInstruction }
@@ -237,8 +237,60 @@ void AlexAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,
     OS << "PrintDebugValueComment()";
 }
 
+
+AlexMCInstLower::AlexMCInstLower(AlexAsmPrinter &asmprinter)
+        : AsmPrinter(asmprinter) {}
+
+void AlexMCInstLower::Initialize(MCContext* C) {
+    Ctx = C;
+}
+
+static void CreateMCInst(MCInst& Inst, unsigned Opc, const MCOperand& Opnd0,
+                         const MCOperand& Opnd1,
+                         const MCOperand& Opnd2 = MCOperand()) {
+    Inst.setOpcode(Opc);
+    Inst.addOperand(Opnd0);
+    Inst.addOperand(Opnd1);
+    if (Opnd2.isValid())
+        Inst.addOperand(Opnd2);
+}
+
+//@LowerOperand {
+MCOperand AlexMCInstLower::LowerOperand(const MachineOperand& MO,
+                                        unsigned offset) const {
+    MachineOperandType MOTy = MO.getType();
+
+    switch (MOTy) {
+        //@2
+        default: llvm_unreachable("unknown operand type");
+        case MachineOperand::MO_Register:
+            // Ignore all implicit register operands.
+            if (MO.isImplicit()) break;
+            return MCOperand::createReg(MO.getReg());
+        case MachineOperand::MO_Immediate:
+            return MCOperand::createImm(MO.getImm() + offset);
+        case MachineOperand::MO_RegisterMask:
+            break;
+    }
+
+    return MCOperand();
+}
+
+void AlexMCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
+    OutMI.setOpcode(MI->getOpcode());
+
+    for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
+        const MachineOperand &MO = MI->getOperand(i);
+        MCOperand MCOp = LowerOperand(MO);
+
+        if (MCOp.isValid())
+            OutMI.addOperand(MCOp);
+    }
+}
+
 // Force static initialization.
 extern "C" void LLVMInitializeAlexAsmPrinter() {
     RegisterAsmPrinter<AlexAsmPrinter> X(TheAlexTarget);
     //RegisterAsmPrinter<AlexAsmPrinter> Y(TheAlexelTarget);
 }
+

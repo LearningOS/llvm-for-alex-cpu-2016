@@ -71,7 +71,7 @@ AlexTargetMachine::AlexTargetMachine(const Target &target, const Triple &targetT
                                                    const TargetOptions &options,
                                                    Reloc::Model RM, CodeModel::Model CM,
                                                    CodeGenOpt::Level OL)
-        : LLVMTargetMachine(target, "e-m:e-p:32:32-f128:64-n32-S64", targetTripple, cpu, fs, options, RM, CM, OL),
+        : LLVMTargetMachine(target, "e-m:e-p:32:32-f128:64-n32-S32", targetTripple, cpu, fs, options, RM, CM, OL),
           defaultSubtarget(new AlexSubtarget(targetTripple, cpu, fs, this)),
           targetLoweringObjectFile(new AlexTargetObjectFile())
 {

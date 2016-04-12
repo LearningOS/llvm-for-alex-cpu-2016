@@ -7,7 +7,7 @@ class AlexGPReg<bits<16> Enc, string n> : AlexReg<Enc, n>;
 
 let Namespace = "Alex" in {
   //@ General Purpose Registers
-  def ZERO   : AlexGPReg<0,  "zero">,   DwarfRegNum<[0]>;
+  def R0     : AlexGPReg<0,  "r0">,   DwarfRegNum<[0]>;
   def R1     : AlexGPReg<1,  "r1">,     DwarfRegNum<[1]>;
   def R2     : AlexGPReg<2,  "r2">,     DwarfRegNum<[2]>;
   def R3     : AlexGPReg<3,  "r3">,     DwarfRegNum<[3]>;
@@ -16,4 +16,4 @@ let Namespace = "Alex" in {
   def SP     : AlexGPReg<6,  "sp">,     DwarfRegNum<[6]>;
   def PC     : AlexGPReg<7,  "pc">,     DwarfRegNum<[7]>;
 }
-def Int32Regs   : RegisterClass<"Alex", [i32], 32, (add ZERO, R1, R2, R3, LR, FP, SP, PC)>;
+def Int32Regs   : RegisterClass<"Alex", [i32], 32, (add R0, R1, R2, R3, LR, FP, SP, PC)>;

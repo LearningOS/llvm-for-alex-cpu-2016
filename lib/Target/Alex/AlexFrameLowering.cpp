@@ -26,33 +26,9 @@ void AlexFrameLowering::determineCalleeSaves(MachineFunction &MF,
     TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
     //Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
     //MachineRegisterInfo& MRI = MF.getRegInfo();
-    SavedRegs.set(Alex::LR);
+   // SavedRegs.set(Alex::LR);
 
     return;
-}
-
-void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const {
-    MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
-    MachineFrameInfo *MFI            = MF.getFrameInfo();
-    //Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
-
-    const AlexInstrInfo &TII =
-            *static_cast<const AlexInstrInfo *>(subtarget->getInstrInfo());
-    const AlexRegisterInfo &RegInfo =
-            *static_cast<const AlexRegisterInfo *>(subtarget->getRegisterInfo());
-
-    DebugLoc dl = MBBI->getDebugLoc();
-    //Cpu0ABIInfo ABI = STI.getABI();
-    unsigned SP = Alex::SP;
-
-    // Get the number of bytes from FrameInfo
-    uint64_t StackSize = MFI->getStackSize();
-
-    if (!StackSize)
-        return;
-
-    // Adjust stack.
-    TII.adjustStackPtr(SP, StackSize, MBB, MBBI);
 }
 
 void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const {
@@ -70,6 +46,14 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
     //Cpu0ABIInfo ABI = STI.getABI();
     unsigned SP = Alex::SP;
     const TargetRegisterClass *RC = &Alex::Int32RegsRegClass;
+
+    // push $fp
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(4);
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::SW)).addReg(Alex::FP).addReg(Alex::SP).addImm(0);
+
+    // move $sp, $fp
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDiu)).addReg(Alex::FP).addReg(SP).addImm(0)
+            .setMIFlag(MachineInstr::FrameSetup);
 
     // First, compute final stack size.
     uint64_t StackSize = MFI->getStackSize();
@@ -113,7 +97,29 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
             }
         }
     }
+
 }
 
+void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const {
+    MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
+    MachineFrameInfo *MFI            = MF.getFrameInfo();
+    //Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
 
+    const AlexInstrInfo &TII =
+            *static_cast<const AlexInstrInfo *>(subtarget->getInstrInfo());
+    const AlexRegisterInfo &RegInfo =
+            *static_cast<const AlexRegisterInfo *>(subtarget->getRegisterInfo());
 
+    DebugLoc dl = MBBI->getDebugLoc();
+    //Cpu0ABIInfo ABI = STI.getABI();
+    unsigned SP = Alex::SP;
+
+    // Get the number of bytes from FrameInfo
+    uint64_t StackSize = MFI->getStackSize();
+
+    if (!StackSize)
+        return;
+
+    // Adjust stack.
+    TII.adjustStackPtr(SP, StackSize, MBB, MBBI);
+}

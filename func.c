@@ -1,5 +1,4 @@
-int func() {
-  int a = 3;
-  a += 5;
-  return a;
+int func(int a, int b) {
+  int c =100;
+  return a + b +c;
 }

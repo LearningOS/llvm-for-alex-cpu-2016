@@ -2,6 +2,7 @@
 #include "AlexISelLowering.h"
 #include "AlexISelDAGToDAG.h"
 #include "AlexRegisterInfo.h"
+#include "AlexMachineFunction.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -49,10 +50,221 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
     computeRegisterProperties(registerInfo);
 }
 
-SDValue AlexTargetLowering::LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
-                                                 const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl, SelectionDAG &DAG,
+static unsigned
+addLiveIn(MachineFunction &MF, unsigned PReg, const TargetRegisterClass *RC)
+{
+    unsigned VReg = MF.getRegInfo().createVirtualRegister(RC);
+    MF.getRegInfo().addLiveIn(PReg, VReg);
+    return VReg;
+}
+/*
+void AlexTargetLowering::copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDValue> &OutChains,
+              SelectionDAG &DAG, const ISD::ArgFlagsTy &Flags,
+              SmallVectorImpl<SDValue> &InVals, const Argument *FuncArg,
+              const AlexCC &CC, const ByValArgInfo &ByVal) const {
+    MachineFunction &MF = DAG.getMachineFunction();
+    MachineFrameInfo *MFI = MF.getFrameInfo();
+    unsigned RegAreaSize = ByVal.NumRegs * CC.regSize();
+    unsigned FrameObjSize = std::max(Flags.getByValSize(), RegAreaSize);
+    int FrameObjOffset;
+
+    const ArrayRef<MCPhysReg> ByValArgRegs = CC.intArgRegs();
+
+    if (RegAreaSize)
+        FrameObjOffset = (int)CC.reservedArgArea() -
+                         (int)((CC.numIntArgRegs() - ByVal.FirstIdx) * CC.regSize());
+    else
+        FrameObjOffset = ByVal.Address;
+
+    // Create frame object.
+    EVT PtrTy = getPointerTy(DAG.getDataLayout());
+    int FI = MFI->CreateFixedObject(FrameObjSize, FrameObjOffset, true);
+    SDValue FIN = DAG.getFrameIndex(FI, PtrTy);
+    InVals.push_back(FIN);
+
+    if (!ByVal.NumRegs)
+        return;
+
+    // Copy arg registers.
+    MVT RegTy = MVT::getIntegerVT(CC.regSize() * 8);
+    const TargetRegisterClass *RC = getRegClassFor(RegTy);
+
+    for (unsigned I = 0; I < ByVal.NumRegs; ++I) {
+        unsigned ArgReg = ByValArgRegs[ByVal.FirstIdx + I];
+        unsigned VReg = addLiveIn(MF, ArgReg, RC);
+        unsigned Offset = I * CC.regSize();
+        SDValue StorePtr = DAG.getNode(ISD::ADD, DL, PtrTy, FIN,
+                                       DAG.getConstant(Offset, DL, PtrTy));
+        SDValue Store = DAG.getStore(Chain, DL, DAG.getRegister(VReg, RegTy),
+                                     StorePtr, MachinePointerInfo(FuncArg, Offset),
+                                     false, false, 0);
+        OutChains.push_back(Store);
+    }
+}*/
+
+SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID CallConv, bool IsVarArg,
+                                                 const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl, SelectionDAG &dag,
                                                  SmallVectorImpl<SDValue> &InVals) const {
-    return Chain;
+    MachineFunction &MF = dag.getMachineFunction();
+    MachineFrameInfo *MFI = MF.getFrameInfo();
+    AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
+
+    AlexFI->setVarArgsFrameIndex(0);
+
+    // Assign locations to all of the incoming arguments.
+    SmallVector<CCValAssign, 16> ArgLocs;
+    CCState CCInfo(CallConv, IsVarArg, dag.getMachineFunction(),
+                   ArgLocs, *dag.getContext());
+    AlexCC AlexCCInfo(CallConv, false,
+                      CCInfo);
+    AlexFI->setFormalArgInfo(CCInfo.getNextStackOffset(),
+                             AlexCCInfo.hasByValArg());
+
+    Function::const_arg_iterator FuncArg =
+            dag.getMachineFunction().getFunction()->arg_begin();
+    bool UseSoftFloat = false;
+
+    AlexCCInfo.analyzeFormalArguments(Ins, UseSoftFloat, FuncArg);
+
+    // Used with vargs to acumulate store chains.
+    std::vector<SDValue> OutChains;
+
+    unsigned CurArgIdx = 0;
+    AlexCC::byval_iterator ByValArg = AlexCCInfo.byval_begin();
+
+    //@2 {
+    for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+        //@2 }
+        CCValAssign &VA = ArgLocs[i];
+        std::advance(FuncArg, Ins[i].OrigArgIndex - CurArgIdx);
+        CurArgIdx = Ins[i].OrigArgIndex;
+        EVT ValVT = VA.getValVT();
+        ISD::ArgFlagsTy Flags = Ins[i].Flags;
+        bool IsRegLoc = VA.isRegLoc();
+
+        //@byval pass {
+        if (Flags.isByVal()) {
+            assert(false);
+            assert(Flags.getByValSize() &&
+                   "ByVal args of size 0 should have been ignored by front-end.");
+            assert(ByValArg != AlexCCInfo.byval_end());
+            //copyByValRegs(chain, dl, OutChains, dag, Flags, InVals, &*FuncArg,
+            //              AlexCCInfo, *ByValArg);
+            ++ByValArg;
+            continue;
+        }
+        //@byval pass }
+        // Arguments stored on registers
+        // sanity check
+        assert(VA.isMemLoc());
+
+        // The stack pointer offset is relative to the caller stack frame.
+        int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8,
+                                        VA.getLocMemOffset(), true);
+
+        // Create load nodes to retrieve arguments from the stack
+        SDValue FIN = dag.getFrameIndex(FI, getPointerTy(dag.getDataLayout()));
+        SDValue Load = dag.getLoad(ValVT, dl, chain, FIN,
+                                   MachinePointerInfo::getFixedStack(MF, FI, 0),
+                                   false, false, false, 0);
+        InVals.push_back(Load);
+        OutChains.push_back(Load.getValue(1));
+    }
+
+    // All stores are grouped in one node to allow the matching between
+    // the size of Ins and InVals. This only happens when on varg functions
+    if (!OutChains.empty()) {
+        OutChains.push_back(chain);
+        chain = dag.getNode(ISD::TokenFactor, dl, MVT::Other, OutChains);
+    }
+    return chain;
+}
+void AlexTargetLowering::AlexCC::handleByValArg(unsigned ValNo, MVT ValVT,
+                                                MVT LocVT,
+                                                CCValAssign::LocInfo LocInfo,
+                                                ISD::ArgFlagsTy ArgFlags) {
+    assert(ArgFlags.getByValSize() && "Byval argument's size shouldn't be 0.");
+
+    struct ByValArgInfo ByVal;
+    unsigned RegSize = regSize();
+    unsigned ByValSize = ArgFlags.getByValSize();//RoundUpToAlignment(, RegSize);
+    unsigned Align = std::min(std::max(ArgFlags.getByValAlign(), RegSize),
+                              RegSize * 2);
+
+    // Allocate space on caller's stack.
+    ByVal.Address = CCInfo.AllocateStack(ByValSize - RegSize * ByVal.NumRegs,
+                                         Align);
+    CCInfo.addLoc(CCValAssign::getMem(ValNo, ValVT, ByVal.Address, LocVT,
+                                      LocInfo));
+    ByValArgs.push_back(ByVal);
+}
+
+void AlexTargetLowering::AlexCC::analyzeFormalArguments(const SmallVectorImpl<ISD::InputArg> &Args,
+                       bool IsSoftFloat, Function::const_arg_iterator FuncArg) {
+    unsigned NumArgs = Args.size();
+    llvm::CCAssignFn *FixedFn = CC_Alex;
+    unsigned CurArgIdx = 0;
+
+    for (unsigned I = 0; I != NumArgs; ++I) {
+        MVT ArgVT = Args[I].VT;
+        ISD::ArgFlagsTy ArgFlags = Args[I].Flags;
+        std::advance(FuncArg, Args[I].OrigArgIndex - CurArgIdx);
+        CurArgIdx = Args[I].OrigArgIndex;
+
+        if (ArgFlags.isByVal()) {
+            handleByValArg(I, ArgVT, ArgVT, CCValAssign::Full, ArgFlags);
+            continue;
+        }
+
+        MVT RegVT = getRegVT(ArgVT, FuncArg->getType(), nullptr, IsSoftFloat);
+
+        if (!FixedFn(I, ArgVT, RegVT, CCValAssign::Full, ArgFlags, CCInfo))
+            continue;
+
+        llvm_unreachable(nullptr);
+    }
+}
+
+
+template<typename Ty>
+void AlexTargetLowering::AlexCC::
+analyzeReturn(const SmallVectorImpl<Ty> &RetVals, bool IsSoftFloat,
+              const SDNode *CallNode, const Type *RetTy) const {
+    CCAssignFn *Fn;
+
+    Fn = RetCC_Alex;
+
+    for (unsigned I = 0, E = RetVals.size(); I < E; ++I) {
+        MVT VT = RetVals[I].VT;
+        ISD::ArgFlagsTy Flags = RetVals[I].Flags;
+        MVT RegVT = this->getRegVT(VT, RetTy, CallNode, IsSoftFloat);
+
+        if (Fn(I, VT, RegVT, CCValAssign::Full, Flags, this->CCInfo)) {
+#ifndef NDEBUG
+            dbgs() << "Call result #" << I << " has unhandled type "
+            << EVT(VT).getEVTString() << '\n';
+#endif
+            llvm_unreachable(nullptr);
+        }
+    }
+}
+AlexTargetLowering::AlexCC::AlexCC(
+        CallingConv::ID CC, bool IsO32_, CCState &Info,
+        AlexCC::SpecialCallingConvType SpecialCallingConv_)
+        : CCInfo(Info), CallConv(CC), IsO32(IsO32_) {
+    // Pre-allocate reserved argument area.
+    CCInfo.AllocateStack(reservedArgArea(), 1);
+}
+void AlexTargetLowering::AlexCC::
+analyzeCallResult(const SmallVectorImpl<ISD::InputArg> &Ins, bool IsSoftFloat,
+                  const SDNode *CallNode, const Type *RetTy) const {
+    analyzeReturn(Ins, IsSoftFloat, CallNode, RetTy);
+}
+
+void AlexTargetLowering::AlexCC::
+analyzeReturn(const SmallVectorImpl<ISD::OutputArg> &Outs, bool IsSoftFloat,
+              const Type *RetTy) const {
+    analyzeReturn(Outs, IsSoftFloat, nullptr, RetTy);
 }
 
 SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv, bool isVarArg,
@@ -60,18 +272,18 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
                                         const SmallVectorImpl<SDValue> &outVals,
                                         SDLoc dl,
                                         SelectionDAG &dag) const {
-   /* SmallVector<CCValAssign, 16> RVLocs;
+    SmallVector<CCValAssign, 16> RVLocs;
     MachineFunction &MF = dag.getMachineFunction();
 
     // CCState - Info about the registers and stack slot.
     CCState CCInfo(CallConv, isVarArg, MF, RVLocs,
                    *dag.getContext());
-    ///Cpu0CC Cpu0CCInfo(CallConv, ABI.IsO32(),
-    //                  CCInfo);
+    AlexCC AlexCCInfo(CallConv, true,
+                        CCInfo);
 
     // Analyze return values.
-   // Cpu0CCInfo.analyzeReturn(outs, false, // use soft float
-    //                         MF.getFunction()->getReturnType());
+    AlexCCInfo.analyzeReturn(outs, false,
+                              MF.getFunction()->getReturnType());
 
     SDValue Flag;
     SmallVector<SDValue, 4> RetOps(1, chain);
@@ -82,8 +294,8 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
         CCValAssign &VA = RVLocs[i];
         assert(VA.isRegLoc() && "Can only return in registers!");
 
-        //if (RVLocs[i].getValVT() != RVLocs[i].getLocVT())
-        //    Val = DAG.getNode(ISD::BITCAST, DL, RVLocs[i].getLocVT(), Val);
+        if (RVLocs[i].getValVT() != RVLocs[i].getLocVT())
+            Val = dag.getNode(ISD::BITCAST, dl, RVLocs[i].getLocVT(), Val);
 
         chain = dag.getCopyToReg(chain, dl, VA.getLocReg(), Val, Flag);
 
@@ -92,18 +304,35 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
         RetOps.push_back(dag.getRegister(VA.getLocReg(), VA.getLocVT()));
     }
 
+//@Ordinary struct type: 2 {
+    // The Alex ABIs for returning structs by value requires that we copy
+    // the sret argument into $v0 for the return. We saved the argument into
+    // a virtual register in the entry block, so now we copy the value out
+    // and into $v0.
+    if (MF.getFunction()->hasStructRetAttr()) {
+        AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
+        unsigned Reg = AlexFI->getSRetReturnReg();
+
+        if (!Reg)
+            llvm_unreachable("sret virtual register not created in the entry block");
+        SDValue Val =
+                dag.getCopyFromReg(chain, dl, Reg, getPointerTy(dag.getDataLayout()));
+        unsigned V0 = Alex::LR;
+
+        chain = dag.getCopyToReg(chain, dl, V0, Val, Flag);
+        Flag = chain.getValue(1);
+        RetOps.push_back(dag.getRegister(V0, getPointerTy(dag.getDataLayout())));
+    }
+//@Ordinary struct type: 2 }
+
     RetOps[0] = chain;  // Update chain.
 
     // Add the flag if we have it.
-    //if (Flag.getNode())
-    //    RetOps.push_back(Flag);
+    if (Flag.getNode())
+        RetOps.push_back(Flag);
 
-    // Return on Cpu0 is always a "ret $lr"
-    //return DAG.getNode(Cpu0ISD::Ret, DL, MVT::Other, RetOps);
-    // R1 =
-
-    //return dag.getNode(Alex::ADDIU, dl, MVT::Other,
-    //                  chain, dag.getRegister(Alex::LR, MVT::i32));*/
+    // Return on Alex is always a "ret $lr"
+    return dag.getNode(AlexISD::Ret, dl, MVT::Other, RetOps);
     return dag.getNode(AlexISD::Ret, dl, MVT::Other,
                        chain, dag.getRegister(Alex::LR, MVT::i32));
 }

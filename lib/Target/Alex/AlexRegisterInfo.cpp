@@ -27,9 +27,10 @@ const uint32_t *AlexRegisterInfo::getCallPreservedMask(const MachineFunction &MF
 }
 BitVector AlexRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     BitVector Reserved(getNumRegs());
+    Reserved.set(Alex::LR);
     Reserved.set(Alex::SP);
+    Reserved.set(Alex::FP);
     Reserved.set(Alex::PC);
-    Reserved.set(Alex::ZERO);
     return Reserved;
 }
 
@@ -91,7 +92,7 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
     //   by adding the size of the stack:
     //   incoming argument, callee-saved register location or local variable.
     int64_t Offset;
-    Offset = spOffset + (int64_t)stackSize;
+    Offset = spOffset;
 
     Offset    += MI.getOperand(i+1).getImm();
 

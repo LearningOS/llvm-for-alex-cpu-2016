@@ -17,7 +17,7 @@ add_llvm_target(AlexCodeGen
         AlexISelDAGToDAG.cpp
         AlexISelLowering.cpp
         AlexFrameLowering.cpp
-#        AlexMachineFunctionInfo.cpp
+        AlexMachineFunction.cpp
         AlexRegisterInfo.cpp
         AlexTargetMachine.cpp
 #        AlexMCInstLower.cpp

@@ -18,8 +18,29 @@ namespace llvm {
 
     class raw_ostream;
 
-    class AlexAsmPrinter : public AsmPrinter {
+    class MCContext;
+    class MCInst;
+    class MCOperand;
+    class MachineInstr;
+    class MachineFunction;
+    class AlexAsmPrinter;
 
+//@1 {
+/// This class is used to lower an MachineInstr into an MCInst.
+    class LLVM_LIBRARY_VISIBILITY AlexMCInstLower {
+//@2
+        typedef MachineOperand::MachineOperandType MachineOperandType;
+        MCContext *Ctx;
+        AlexAsmPrinter &AsmPrinter;
+    public:
+        AlexMCInstLower(AlexAsmPrinter &asmprinter);
+        void Initialize(MCContext* C);
+        void Lower(const MachineInstr *MI, MCInst &OutMI) const;
+        MCOperand LowerOperand(const MachineOperand& MO, unsigned offset = 0) const;
+    };
+
+    class AlexAsmPrinter : public AsmPrinter {
+        AlexMCInstLower MCInstLowering;
         void EmitInstrWithMacroNoAT(const MachineInstr *MI);
 
     private:
@@ -34,7 +55,8 @@ namespace llvm {
         explicit AlexAsmPrinter(TargetMachine &targetMachine,
                                 std::unique_ptr <MCStreamer> Streamer)
                 : AsmPrinter(targetMachine, std::move(Streamer)),
-                  subtarget(static_cast<AlexTargetMachine&>(targetMachine).getSubtargetImpl())
+                  subtarget(static_cast<AlexTargetMachine&>(targetMachine).getSubtargetImpl()),
+                  MCInstLowering(*this)
         {
         }
 
@@ -63,6 +85,7 @@ namespace llvm {
 
         void PrintDebugValueComment(const MachineInstr *MI, raw_ostream &OS);
     };
+
 }
 
 #endif
