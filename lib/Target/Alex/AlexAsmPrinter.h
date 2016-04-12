@@ -34,12 +34,18 @@ namespace llvm {
         AlexAsmPrinter &AsmPrinter;
     public:
         AlexMCInstLower(AlexAsmPrinter &asmprinter);
-        void Initialize(MCContext* C);
+        void Initialize(MCContext* C) {
+            Ctx = C;
+        }
         void Lower(const MachineInstr *MI, MCInst &OutMI) const;
         MCOperand LowerOperand(const MachineOperand& MO, unsigned offset = 0) const;
+        MCOperand LowerSymbolOperand(const MachineOperand &MO,
+                                     MachineOperandType MOTy,
+                                     unsigned Offset) const;
+
     };
 
-    class AlexAsmPrinter : public AsmPrinter {
+    class LLVM_LIBRARY_VISIBILITY AlexAsmPrinter : public AsmPrinter {
         AlexMCInstLower MCInstLowering;
         void EmitInstrWithMacroNoAT(const MachineInstr *MI);
 

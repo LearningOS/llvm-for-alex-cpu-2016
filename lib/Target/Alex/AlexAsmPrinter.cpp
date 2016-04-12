@@ -182,7 +182,7 @@ void AlexAsmPrinter::EmitFunctionEntryLabel() {
 /// EmitFunctionBodyStart - Targets can override this to emit stuff before
 /// the first basic block in the function.
 void AlexAsmPrinter::EmitFunctionBodyStart() {
-    //MCInstLowering.Initialize(&MF->getContext());
+    MCInstLowering.Initialize(&MF->getContext());
 
     emitFrameDirective();
 
@@ -241,9 +241,6 @@ void AlexAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,
 AlexMCInstLower::AlexMCInstLower(AlexAsmPrinter &asmprinter)
         : AsmPrinter(asmprinter) {}
 
-void AlexMCInstLower::Initialize(MCContext* C) {
-    Ctx = C;
-}
 
 static void CreateMCInst(MCInst& Inst, unsigned Opc, const MCOperand& Opnd0,
                          const MCOperand& Opnd1,
@@ -255,6 +252,64 @@ static void CreateMCInst(MCInst& Inst, unsigned Opc, const MCOperand& Opnd0,
         Inst.addOperand(Opnd2);
 }
 
+MCOperand AlexMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
+                                              MachineOperandType MOTy,
+                                              unsigned Offset) const {
+    MCSymbolRefExpr::VariantKind Kind = MCSymbolRefExpr::VK_None;
+    const MCSymbol *Symbol;
+
+    /*switch(MO.getTargetFlags()) {
+        default:                   llvm_unreachable("Invalid target flag!");
+        case AlexII::MO_NO_FLAG:   Kind = MCSymbolRefExpr::VK_None; break;
+
+// Alex_GPREL is for llc -march=Alex -relocation-model=static -Alex-islinux-
+//  format=false (global var in .sdata).
+        case AlexII::MO_GPREL:     Kind = MCSymbolRefExpr::VK_Alex_GPREL; break;
+
+        case AlexII::MO_GOT16:     Kind = MCSymbolRefExpr::VK_Alex_GOT16; break;
+        case AlexII::MO_GOT:       Kind = MCSymbolRefExpr::VK_Alex_GOT; break;
+// ABS_HI and ABS_LO is for llc -march=Alex -relocation-model=static (global 
+//  var in .data).
+        case AlexII::MO_ABS_HI:    Kind = MCSymbolRefExpr::VK_Alex_ABS_HI; break;
+        case AlexII::MO_ABS_LO:    Kind = MCSymbolRefExpr::VK_Alex_ABS_LO; break;
+        case AlexII::MO_GOT_HI16:  Kind = MCSymbolRefExpr::VK_Alex_GOT_HI16; break;
+        case AlexII::MO_GOT_LO16:  Kind = MCSymbolRefExpr::VK_Alex_GOT_LO16; break;
+    }*/
+
+    switch (MOTy) {
+        case MachineOperand::MO_GlobalAddress:
+            Symbol = AsmPrinter.getSymbol(MO.getGlobal());
+            break;
+
+        case MachineOperand::MO_MachineBasicBlock:
+            Symbol = MO.getMBB()->getSymbol();
+            break;
+
+//        case MachineOperand::MO_BlockAddress:
+//            Symbol = AsmPrinter.GetBlockAddressSymbol(MO.getBlockAddress());
+//            Offset += MO.getOffset();
+//            break;
+//
+//        case MachineOperand::MO_JumpTableIndex:
+//            Symbol = AsmPrinter.GetJTISymbol(MO.getIndex());
+//            break;
+
+        default:
+            llvm_unreachable("<unknown operand type>");
+    }
+    const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, Kind, *Ctx);
+
+    if (!Offset)
+        return MCOperand::createExpr(MCSym);
+
+    // Assume offset is never negative.
+    assert(Offset > 0);
+
+    const MCConstantExpr *OffsetExpr =  MCConstantExpr::create(Offset, *Ctx);
+    const MCBinaryExpr *AddExpr = MCBinaryExpr::createAdd(MCSym, OffsetExpr, *Ctx);
+    return MCOperand::createExpr(AddExpr);
+}
+
 //@LowerOperand {
 MCOperand AlexMCInstLower::LowerOperand(const MachineOperand& MO,
                                         unsigned offset) const {
@@ -263,6 +318,9 @@ MCOperand AlexMCInstLower::LowerOperand(const MachineOperand& MO,
     switch (MOTy) {
         //@2
         default: llvm_unreachable("unknown operand type");
+        case MachineOperand::MO_MachineBasicBlock:
+        case MachineOperand::MO_GlobalAddress:
+            return LowerSymbolOperand(MO, MOTy, offset);
         case MachineOperand::MO_Register:
             // Ignore all implicit register operands.
             if (MO.isImplicit()) break;

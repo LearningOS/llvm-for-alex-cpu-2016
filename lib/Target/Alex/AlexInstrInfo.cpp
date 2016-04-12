@@ -41,8 +41,9 @@ MachineMemOperand *AlexInstrInfo::GetMemOperand(MachineBasicBlock &MBB, int FI,
 void AlexInstrInfo::expandRetLR(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator I) const {
     //loadRegFromStackSlot(MBB, I, Alex::LR, 0, nullptr, nullptr);
-    BuildMI(MBB, I, I->getDebugLoc(), get(Alex::LW)).addReg(Alex::LR).addReg(Alex::FP).addImm(0);
-    BuildMI(MBB, I, I->getDebugLoc(), get(Alex::JRRA)).addReg(Alex::LR);
+
+    BuildMI(MBB, I, I->getDebugLoc(), get(Alex::LW)).addReg(Alex::RA).addReg(Alex::FP).addImm(0);
+    BuildMI(MBB, I, I->getDebugLoc(), get(Alex::JRRA)).addReg(Alex::RA);
 }
 bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 //@expandPostRAPseudo-body

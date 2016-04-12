@@ -64,13 +64,25 @@ namespace llvm {
                                     const AlexSubtarget *STI,
                                     const AlexRegisterInfo*
         );
-
+        SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
         /// getTargetNodeName - This method returns the name of a target specific
         //  DAG node.
         const char *getTargetNodeName(unsigned Opcode) const override;
     protected:
         const AlexSubtarget *subtarget;
-
+        SDValue lowerGlobalAddress(SDValue Op,
+                                                       SelectionDAG &DAG) const;
+        SDValue getGlobalReg(SelectionDAG &DAG, EVT Ty) const;
+        SDValue getTargetNode(GlobalAddressSDNode *N, EVT Ty,
+                                                  SelectionDAG &DAG,
+                                                  unsigned Flag) const;
+        SDValue getTargetNode(ExternalSymbolSDNode *N, EVT Ty,
+                                                  SelectionDAG &DAG,
+                                                  unsigned Flag) const;
+        template<class NodeTy>
+        SDValue getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
+                              unsigned Flag, SDValue Chain,
+                              const MachinePointerInfo &PtrInfo) const;
     protected:
 
         /// ByValArgInfo - Byval argument information.

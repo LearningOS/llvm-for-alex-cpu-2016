@@ -4,7 +4,7 @@
   let Namespace = "Alex";
   let Size = 4;
   bits<8> Opcode = 0;
-  let Inst{31-24} = Opcode;
+  let Inst{31-25} = Opcode;
 
   let OutOperandList = outs;
   let InOperandList  = ins;
@@ -24,9 +24,9 @@ class InstrRRI<string asmstr, bits<8> op, dag outs, dag ins,
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-18} = rb;
-  let Inst{17-16} = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-18} = rb;
+  let Inst{18-16} = 0;
   let Inst{15-0}  = imm16;
 }
 
@@ -39,8 +39,8 @@ class InstrRR<string asmstr, bits<8> op, dag outs, dag ins,
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-18} = rb;
+  let Inst{24-22} = ra;
+  let Inst{21-19} = rb;
   let Inst{17-0} = 0;
 }
 
@@ -52,8 +52,8 @@ class InstrRI<string asmstr, bits<8> op, dag outs, dag ins,
   bits<16> imm16;
 
   let Opcode = op;
-  let Inst{23-21} = ra;
-  let Inst{20-16} = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-16} = 0;
   let Inst{15-0}  = imm16;
 }
 
@@ -65,8 +65,8 @@ class InstrR<string asmstr, bits<8> op, dag outs, dag ins,
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-0} = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-0} = 0;
 }
 class InstrI<string asmstr, bits<8> op, dag outs, dag ins,
          list<dag> pattern, InstrItinClass itin = NoItinerary>:
@@ -75,7 +75,7 @@ class InstrI<string asmstr, bits<8> op, dag outs, dag ins,
   bits<16> imm16;
   let Opcode = op;
 
-  let Inst{23-16} = 0;
+  let Inst{24-16} = 0;
   let Inst{15-0} = imm16;
 }
 class InstrPlain<string asmstr, bits<8> op, dag outs, dag ins,
@@ -84,7 +84,7 @@ class InstrPlain<string asmstr, bits<8> op, dag outs, dag ins,
 {
   let Opcode = op;
 
-  let Inst{23-0} = 0;
+  let Inst{24-0} = 0;
 }
 
 def IIAlu              : InstrItinClass;
@@ -170,10 +170,10 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Size = 4;
 
-  bits<8> Opcode = 0;
+  bits<7> Opcode = 0;
 
   // Top 8 bits are the 'opcode' field
-  let Inst{31-24} = Opcode;
+  let Inst{31-25} = Opcode;
 
   let OutOperandList = outs;
   let InOperandList  = ins;
@@ -196,24 +196,24 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
 }
 
 // Alex Pseudo Instructions Format
-class AlexPseudo<bits<8> opc, dag outs, dag ins, string asmstr, list<dag> pattern>:
+class AlexPseudo<bits<7> opc, dag outs, dag ins, string asmstr, list<dag> pattern>:
       AlexInst<outs, ins, asmstr, pattern, NoItinerary, Pseudo> {
   let Opcode = opc;
   let isCodeGenOnly = 1;
   let isPseudo = 1;
 }
 
-class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+class InstrR<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
 {
   bits<3>  ra;
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-0} = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-0} = 0;
 }
-class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+class InstrRI<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
 {
   bits<3>  ra;
@@ -221,11 +221,11 @@ class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-16} = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-16} = 0;
   let Inst{15-0}  = imm16;
 }
-class InstrRRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+class InstrRRI<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
 {
   bits<3>  ra;
@@ -234,12 +234,12 @@ class InstrRRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-18} = rb;
-  let Inst{17-16} = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-19} = rb;
+  let Inst{18-16} = 0;
   let Inst{15-0}  = imm16;
 }
-class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+class InstrRRR<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
 {
   bits<3>  ra;
@@ -248,20 +248,20 @@ class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Opcode = op;
 
-  let Inst{23-21} = ra;
-  let Inst{20-18} = rb;
-  let Inst{17-15} = rc;
-  let Inst{14-0}  = 0;
+  let Inst{24-22} = ra;
+  let Inst{21-19} = rb;
+  let Inst{18-16} = rc;
+  let Inst{15-0}  = 0;
 }
 
-class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+class InstrI<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmJ>
 {
   bits<16> imm;
 
   let Opcode = op;
 
-  let Inst{23-16} = 0;
+  let Inst{24-16} = 0;
   let Inst{15-0} = imm;
 }
 
@@ -295,7 +295,6 @@ def AlexRet : SDNode<"AlexISD::Ret", SDTNone,
 def EnableOverflow  : Predicate<"Subtarget->enableOverflow()">;
 def DisableOverflow : Predicate<"Subtarget->disableOverflow()">;
 
-def HasCmp      :     Predicate<"Subtarget->hasCmp()">;
 def HasSlt      :     Predicate<"Subtarget->hasSlt()">;
 
 class AlexInstAlias<string Asm, dag Result, bit Emit = 0b1> :
@@ -395,7 +394,7 @@ def store_a         : AlignedStore<store>;
 
 
 // Arithmetic and logical instructions with 2 register operands.
-class ArithLogicRRI<bits<8> op, string instr_asm, SDNode OpNode,
+class ArithLogicRRI<bits<7> op, string instr_asm, SDNode OpNode,
                   Operand Od, PatLeaf imm_type, RegisterClass RC> :
   InstrRRI<op, (outs Int32Regs:$ra), (ins RC:$rb, Od:$imm16),
      !strconcat(instr_asm, "\t$ra, $rb, $imm16"),
@@ -403,14 +402,14 @@ class ArithLogicRRI<bits<8> op, string instr_asm, SDNode OpNode,
   let isReMaterializable = 1;
 }
 
-class ArithLogicRRR<bits<8> op, string instr_asm, SDNode OpNode, RegisterClass RC> :
+class ArithLogicRRR<bits<7> op, string instr_asm, SDNode OpNode, RegisterClass RC> :
   InstrRRR<op, (outs Int32Regs:$ra), (ins RC:$rb, RC:$rc),
      !strconcat(instr_asm, "\t$ra, $rb, $rc"),
      [(set Int32Regs:$ra, (OpNode RC:$rb, RC:$rc))], NoItinerary> {
   let isReMaterializable = 1;
 }
 
-class FMem<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+class FMem<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
           InstrItinClass itin>: InstrRRI<op, outs, ins, asmstr, pattern, itin> {
   bits<16> addr;
   let Inst{15-0}  = addr{15-0};
@@ -419,7 +418,7 @@ class FMem<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
 // Memory Load/Store
 let canFoldAsLoad = 1 in
-class LoadM<bits<8> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
+class LoadM<bits<7> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
             Operand MemOpnd, bit Pseudo>:
   FMem<op, (outs RC:$ra), (ins MemOpnd:$addr),
      !strconcat(instr_asm, "\t$ra, $addr"),
@@ -427,7 +426,7 @@ class LoadM<bits<8> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
   let isPseudo = Pseudo;
 }
 
-class StoreM<bits<8> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
+class StoreM<bits<7> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
              Operand MemOpnd, bit Pseudo>:
   FMem<op, (outs), (ins RC:$ra, MemOpnd:$addr),
      !strconcat(instr_asm, "\t$ra, $addr"),
@@ -436,13 +435,13 @@ class StoreM<bits<8> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
 }
 
 //@ 32-bit load.
-multiclass LoadM32<bits<8> op, string instr_asm, PatFrag OpNode,
+multiclass LoadM32<bits<7> op, string instr_asm, PatFrag OpNode,
                    bit Pseudo = 0> {
   def #NAME# : LoadM<op, instr_asm, OpNode, Int32Regs, mem, Pseudo>;
 }
 
 // 32-bit store.
-multiclass StoreM32<bits<8> op, string instr_asm, PatFrag OpNode,
+multiclass StoreM32<bits<7> op, string instr_asm, PatFrag OpNode,
                     bit Pseudo = 0> {
   def #NAME# : StoreM<op, instr_asm, OpNode, Int32Regs, mem, Pseudo>;
 }
@@ -450,7 +449,7 @@ multiclass StoreM32<bits<8> op, string instr_asm, PatFrag OpNode,
 //@JumpFR {
 let isBranch=1, isTerminator=1, isBarrier=1, imm16=0, hasDelaySlot = 1,
     isIndirectBranch = 1 in
-class JumpFR<bits<8> op, string instr_asm, RegisterClass RC>:
+class JumpFR<bits<7> op, string instr_asm, RegisterClass RC>:
   InstrRRI<op, (outs), (ins RC:$ra),
      !strconcat(instr_asm, "\t$ra"), [(brind RC:$ra)], NoItinerary> {
   let rb = 0;
@@ -470,23 +469,98 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 // Instruction definition
 //===----------------------------------------------------------------------===//
 
-def ADDiu   : ArithLogicRRI<4, "addiu", add, simm16, immSExt16, Int32Regs>;
-def ADDu    : ArithLogicRRR<3, "addu", add, Int32Regs>;
+/* 算数逻辑指令 */
+def ADDiu   : ArithLogicRRI<0b0000100, "addiu", add, simm16, immSExt16, Int32Regs>;
+def MULiu   : ArithLogicRRI<0b0001010, "muliu", mul, simm16, immSExt16, Int32Regs>;
+def ANDi    : ArithLogicRRI<0b0010100, "andi", and, simm16, immSExt16, Int32Regs>;
+def ORi     : ArithLogicRRI<0b0010110, "ori",  or, simm16, immSExt16, Int32Regs>;
 
-defm LW     : LoadM32<0x01,  "lw",  load_a>;
-defm SW     : StoreM32<0x02, "sw",  store_a>;
 
-def LI      : InstrRI<5, (outs Int32Regs:$ra), (ins simm16:$imm16), "li\t$ra, $imm16",
+def ADDu    : ArithLogicRRR<0b0000011, "addu", add, Int32Regs>;
+def SUBu    : ArithLogicRRR<0b0000101, "subu", sub, Int32Regs>;
+def MULu    : ArithLogicRRR<0b0001001, "mul", mul, Int32Regs>;
+
+def AND     : ArithLogicRRR<0b0010011, "and", and, Int32Regs>;
+def XOR     : ArithLogicRRR<0b0010111, "xor", xor, Int32Regs>;
+def OR      : ArithLogicRRR<0b0010101, "or",  or, Int32Regs>;
+
+def SHL     : ArithLogicRRR<0b0011001, "shl", shl, Int32Regs>;
+def SLR     : ArithLogicRRR<0b0011011, "slr", sra, Int32Regs>;
+
+/* 数据传输 */
+defm LW     : LoadM32<0b1100011,  "lw",  load_a>;
+defm SW     : StoreM32<0b1110000, "sw",  store_a>;
+
+def LI      : InstrRI<0b1101011, (outs Int32Regs:$ra), (ins simm16:$imm16), "li\t$ra, $imm16",
     [(set Int32Regs:$ra, (i32 immSExt16:$imm16))], NoItinerary>;
 
-//def JR      : JumpFR<0x3c, "jr", Int32Regs>;
-def JRRA    : InstrR<7, (outs), (ins Int32Regs:$ra), "jrra\t$ra", [], NoItinerary>;
+/* Global Address */
+def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntBinOp>;
+class WrapperPat<SDNode node, Instruction ORiOp, RegisterClass RC>:
+      Pat<(AlexWrapper RC:$gp, node:$in),
+              (ORiOp RC:$gp, node:$in)>;
+
+def : WrapperPat<tglobaladdr, ADDiu, Int32Regs>;
+
+/* 分支语句 */
+//def JR      : JumpFR<0b1011111, "jr", Int32Regs>;
+def JRRA    : InstrR<0b1100010, (outs), (ins Int32Regs:$ra), "jrra\t$ra", [], NoItinerary>;
 
 let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
     def RetLR : AlexPseudo<123, (outs), (ins), "", [(AlexRet)]>;
 
 def RET     : RetBase<Int32Regs>;
 
-// Small immediates
+class CBranch24<bits<7> op, string instr_asm, RegisterClass RC,
+                   list<Register> UseRegs>:
+  InstrI<op, (outs), (ins RC:$ra, bb:$imm16),
+             !strconcat(instr_asm, "\t$ra, $imm16"),
+             [], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let hasDelaySlot = 1;
+}
+def brtarget24    : Operand<OtherVT> {
+  let EncoderMethod = "getBranch24TargetOpValue";
+  let OperandType = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeBranch24Target";
+}
+
+def JR : InstrI<0b1011111, (outs), (ins brtarget24:$imm16),
+             "jr\t$imm16", [(br bb:$imm16)], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
+}
+def BNE : InstrRRI<0b1010110, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
+        "bne\t$ra, $rb, $imm16",
+         [(brcond (i32 (setne Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
+}
+
+def BLT : InstrRRI<0b1011000, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
+        "blt\t$ra, $rb, $imm16",
+         [(brcond (i32 (setlt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
+}
+
+def BGT : InstrRRI<0b1011011, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
+        "bgt\t$ra, $rb, $imm16",
+         [(brcond (i32 (setgt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
+}
+
+// 模式匹配
 def : Pat<(i32 immSExt16:$in),
           (LI imm:$in)>;
+

@@ -23,6 +23,7 @@ using namespace llvm;
 
 #define DEBUG_TYPE "Alex-lower"
 #include "AlexGenCallingConv.inc"
+#include "AlexTargetObjectFile.h"
 
 const char *AlexTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch (Opcode) {
@@ -45,9 +46,91 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
                                        const AlexRegisterInfo* registerInfo)
         : TargetLowering(*targetMachine), subtarget(subtarget) {
     // disable dag nodes here
-    setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
+    setOperationAction(ISD::BR_CC, MVT::i32, Expand);
+    //setOperationAction(ISD::SETCC, MVT::i32, Expand);
+    //setOperationAction(ISD::SELECT_CC, MVT::i32, Expand);
+    setOperationAction(ISD::GlobalAddress,      MVT::i32,   Custom);
     addRegisterClass(MVT::i32, &Alex::Int32RegsRegClass);
     computeRegisterProperties(registerInfo);
+}
+SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
+{
+    switch (Op.getOpcode())
+    {
+      //  case ISD::BRCOND:             return lowerBRCOND(Op, DAG);
+        case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
+      //  case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
+       // case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
+       // case ISD::SELECT:             return lowerSELECT(Op, DAG);
+    }
+    return SDValue();
+}
+
+SDValue AlexTargetLowering::getGlobalReg(SelectionDAG &DAG, EVT Ty) const {
+    AlexFunctionInfo *FI = DAG.getMachineFunction().getInfo<AlexFunctionInfo>();
+    return DAG.getRegister(Alex::PC, Ty);
+}
+
+//@getTargetNode(GlobalAddressSDNode
+SDValue AlexTargetLowering::getTargetNode(GlobalAddressSDNode *N, EVT Ty,
+                                          SelectionDAG &DAG,
+                                          unsigned Flag) const {
+    return DAG.getTargetGlobalAddress(N->getGlobal(), SDLoc(N), Ty, 0);
+}
+
+//@getTargetNode(ExternalSymbolSDNode
+SDValue AlexTargetLowering::getTargetNode(ExternalSymbolSDNode *N, EVT Ty,
+                                          SelectionDAG &DAG,
+                                          unsigned Flag) const {
+    return DAG.getTargetExternalSymbol(N->getSymbol(), Ty);
+}
+
+template<class NodeTy>
+SDValue AlexTargetLowering::getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
+                      unsigned Flag, SDValue Chain,
+                      const MachinePointerInfo &PtrInfo) const {
+    SDLoc DL(N);
+    SDValue Tgt = DAG.getNode(AlexISD::Wrapper, DL, Ty, getGlobalReg(DAG, Ty),
+                              getTargetNode(N, Ty, DAG, Flag));
+    return DAG.getLoad(Ty, DL, Chain, Tgt, PtrInfo, false, false, false, 0);
+}
+SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
+                                               SelectionDAG &DAG) const {
+    //@lowerGlobalAddress }
+    SDLoc DL(Op);
+    const AlexTargetObjectFile *TLOF =
+            static_cast<const AlexTargetObjectFile *>(getTargetMachine().getObjFileLowering());
+    //@lga 1 {
+    EVT Ty = Op.getValueType();
+    GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
+    const GlobalValue *GV = N->getGlobal();
+    //@lga 1 }
+
+    /*if (getTargetMachine().getRelocationModel() != Reloc::PIC_) {
+        //@ %gp_rel relocation
+        if (TLOF->IsGlobalInSmallSection(GV, getTargetMachine())) {
+            SDValue GA = DAG.getTargetGlobalAddress(GV, DL, MVT::i32, 0,
+                                                    AlexII::MO_GPREL);
+            SDValue GPRelNode = DAG.getNode(AlexISD::GPRel, DL,
+                                            DAG.getVTList(MVT::i32), GA);
+            SDValue GPReg = DAG.getRegister(Alex::GP, MVT::i32);
+            return DAG.getNode(ISD::ADD, DL, MVT::i32, GPReg, GPRelNode);
+        }
+
+        //@ %hi/%lo relocation
+        return getAddrNonPIC(N, Ty, DAG);
+    }*/
+
+    //if (GV->hasInternalLinkage() || (GV->hasLocalLinkage() && !isa<Function>(GV)))
+    //    return getAddrLocal(N, Ty, DAG);
+
+    //@large section
+    //if (!TLOF->IsGlobalInSmallSection(GV, getTargetMachine()))
+    //    return getAddrGlobalLargeGOT(N, Ty, DAG, AlexII::MO_GOT_HI16,
+    //                                 AlexII::MO_GOT_LO16, DAG.getEntryNode(),
+    //                                 MachinePointerInfo::getGOT());
+    MachineFunction &MF = DAG.getMachineFunction();
+    return getAddrGlobal(N, Ty, DAG, 0, DAG.getEntryNode(), MachinePointerInfo::getGOT(MF));
 }
 
 static unsigned
@@ -317,11 +400,11 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
             llvm_unreachable("sret virtual register not created in the entry block");
         SDValue Val =
                 dag.getCopyFromReg(chain, dl, Reg, getPointerTy(dag.getDataLayout()));
-        unsigned V0 = Alex::LR;
+        unsigned RETVAL = Alex::R0;
 
-        chain = dag.getCopyToReg(chain, dl, V0, Val, Flag);
+        chain = dag.getCopyToReg(chain, dl, RETVAL, Val, Flag);
         Flag = chain.getValue(1);
-        RetOps.push_back(dag.getRegister(V0, getPointerTy(dag.getDataLayout())));
+        RetOps.push_back(dag.getRegister(RETVAL, getPointerTy(dag.getDataLayout())));
     }
 //@Ordinary struct type: 2 }
 
@@ -333,12 +416,4 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
 
     // Return on Alex is always a "ret $lr"
     return dag.getNode(AlexISD::Ret, dl, MVT::Other, RetOps);
-    return dag.getNode(AlexISD::Ret, dl, MVT::Other,
-                       chain, dag.getRegister(Alex::LR, MVT::i32));
 }
-
-
-
-
-
-
