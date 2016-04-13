@@ -53,6 +53,10 @@ namespace llvm {
             IncomingArgSize = Size;
             HasByvalArg = HasByval;
         }
+
+        MachinePointerInfo callPtrInfo(StringRef Name);
+        MachinePointerInfo callPtrInfo(const GlobalValue *Val);
+
         unsigned getIncomingArgSize() const { return IncomingArgSize; }
     private:
         bool HasByvalArg;

@@ -48,7 +48,7 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
     const TargetRegisterClass *RC = &Alex::Int32RegsRegClass;
 
     // push $fp
-    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(4);
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(-4);
     BuildMI(MBB, MBBI, dl, TII.get(Alex::SW)).addReg(Alex::FP).addReg(Alex::SP).addImm(0);
 
     // move $sp, $fp
@@ -122,4 +122,8 @@ void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB
 
     // Adjust stack.
     TII.adjustStackPtr(SP, StackSize, MBB, MBBI);
+
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::LW), Alex::FP).addReg(Alex::SP).addImm(0);
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(4);
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::MTRA)).addReg(Alex::SP).addImm(0);
 }

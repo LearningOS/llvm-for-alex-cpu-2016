@@ -39,6 +39,17 @@ bool AlexCallEntry::mayAlias(const MachineFrameInfo *) const {
 void AlexCallEntry::printCustom(raw_ostream &O) const {
     O << "AlexCallEntry: ";
 }
+
+AlexCallEntry::AlexCallEntry(StringRef N) :PseudoSourceValue(GlobalValueCallEntry) {
+    Name = N;
+    Val = nullptr;
+}
+
+AlexCallEntry::AlexCallEntry(const GlobalValue *V) :PseudoSourceValue(GlobalValueCallEntry) {
+    Val = V;
+}
+
+
 AlexFunctionInfo::AlexFunctionInfo(MachineFunction& MF)
         : MF(MF),  SRetReturnReg(0),
           VarArgsFrameIndex(0),
@@ -46,3 +57,21 @@ AlexFunctionInfo::AlexFunctionInfo(MachineFunction& MF)
 AlexFunctionInfo::~AlexFunctionInfo() {}
 
 void AlexFunctionInfo::anchor() { }
+
+MachinePointerInfo AlexFunctionInfo::callPtrInfo(StringRef Name) {
+    std::unique_ptr<const AlexCallEntry> &E = ExternalCallEntries[Name];
+
+    if (!E)
+        E = llvm::make_unique<AlexCallEntry>(Name);
+
+    return MachinePointerInfo(E.get());
+}
+
+MachinePointerInfo AlexFunctionInfo::callPtrInfo(const GlobalValue *Val) {
+    std::unique_ptr<const AlexCallEntry> &E = GlobalCallEntries[Val];
+
+    if (!E)
+        E = llvm::make_unique<AlexCallEntry>(Val);
+
+    return MachinePointerInfo(E.get());
+}

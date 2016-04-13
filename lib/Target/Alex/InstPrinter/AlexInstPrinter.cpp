@@ -21,7 +21,14 @@ void AlexInstPrinter::printRegName(raw_ostream &OS, unsigned RegNo) const {
     OS << '$' << StringRef(getRegisterName(RegNo)).lower();
 }
 
-
+void AlexInstPrinter::printUnsignedImm(const MCInst *MI, int opNum,
+                                       raw_ostream &O) {
+    const MCOperand &MO = MI->getOperand(opNum);
+    if (MO.isImm())
+        O << (unsigned short int)MO.getImm();
+    else
+        printOperand(MI, opNum, O);
+}
 
 //@1 {
 void AlexInstPrinter::printInst(const MCInst *MI, raw_ostream &O,

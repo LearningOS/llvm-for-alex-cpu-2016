@@ -45,7 +45,9 @@ namespace llvm {
             Wrapper,
             DynAlloc,
 
-            Sync
+            Sync,
+            Push,
+            Pop
         };
     }
 
@@ -111,6 +113,9 @@ namespace llvm {
             void analyzeFormalArguments(const SmallVectorImpl<ISD::InputArg> &Args,
                                                                     bool IsSoftFloat, Function::const_arg_iterator FuncArg);
             const CCState &getCCInfo() const { return CCInfo; }
+            void analyzeCallOperands(const SmallVectorImpl<ISD::OutputArg> &Args,
+                                     bool IsVarArg, bool IsSoftFloat, const SDNode *CallNode,
+                                     std::vector<ArgListEntry> &FuncArgs);
             void handleByValArg(unsigned ValNo, MVT ValVT,
                                                             MVT LocVT,
                                                             CCValAssign::LocInfo LocInfo,
@@ -168,10 +173,26 @@ namespace llvm {
                             const SmallVectorImpl<ISD::OutputArg> &outs,
                             const SmallVectorImpl<SDValue> &outVals,
                             SDLoc dl, SelectionDAG &dag) const override;
+        SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                          SmallVectorImpl<SDValue> &InVals) const override;
         void copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDValue> &OutChains,
                                                SelectionDAG &DAG, const ISD::ArgFlagsTy &Flags,
                                                SmallVectorImpl<SDValue> &InVals, const Argument *FuncArg,
                                                const AlexCC &CC, const ByValArgInfo &ByVal) const;
+        SDValue LowerCallResult(SDValue Chain, SDValue InFlag,
+                                                    CallingConv::ID CallConv, bool IsVarArg,
+                                                    const SmallVectorImpl<ISD::InputArg> &Ins,
+                                                    SDLoc DL, SelectionDAG &DAG,
+                                                    SmallVectorImpl<SDValue> &InVals,
+                                                    const SDNode *CallNode,
+                                                    const Type *RetTy) const;
+        void getOpndList(SmallVectorImpl<SDValue> &Ops,
+                            std::deque< std::pair<unsigned, SDValue> > &RegsToPass,
+                            bool IsPICCall, bool GlobalOrExternal, bool InternalLinkage,
+                            CallLoweringInfo &CLI, SDValue Callee, SDValue Chain) const;
+        SDValue passArgOnStack(SDValue StackPtr, unsigned Offset,
+                                                   SDValue Chain, SDValue Arg, SDLoc DL,
+                                                   bool IsTailCall, SelectionDAG &DAG) const;
     };
 }
 

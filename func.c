@@ -32,3 +32,6 @@ int test_struct() {
   return smallShit.a;
 };
 
+int sum(int x) {
+    return sum(x-1) + 1;
+}
