@@ -44,7 +44,7 @@ static MCInstrInfo *createAlexMCInstrInfo() {
 
 static MCRegisterInfo *createAlexMCRegisterInfo(const Triple &TT) {
     MCRegisterInfo *X = new MCRegisterInfo();
-    InitAlexMCRegisterInfo(X, Alex::R1); // defined in AlexGenRegisterInfo.inc
+    InitAlexMCRegisterInfo(X, Alex::RA); // defined in AlexGenRegisterInfo.inc
     return X;
 }
 

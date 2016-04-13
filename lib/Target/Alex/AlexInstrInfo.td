@@ -287,6 +287,13 @@ class ArithLogicRRR<bits<7> op, string instr_asm, SDNode OpNode, RegisterClass R
      [(set Int32Regs:$ra, (OpNode RC:$rb, RC:$rc))], NoItinerary> {
   let isReMaterializable = 1;
 }
+class CompareRRR<bits<7> op, string instr_asm, PatFrag CmpNode, RegisterClass RC> :
+  InstrRRR<op, (outs Int32Regs:$ra), (ins RC:$rb, RC:$rc),
+     !strconcat(instr_asm, "\t$ra, $rb, $rc"),
+     [(set RC:$ra, (CmpNode RC:$rb, RC:$rc))], NoItinerary> {
+  let isReMaterializable = 1;
+}
+
 
 class FMem<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
           InstrItinClass itin>: InstrRRI<op, outs, ins, asmstr, pattern, itin> {
@@ -351,13 +358,18 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 /* 算数逻辑指令 */
 def ADDiu   : ArithLogicRRI<0b0000100, "addiu", add, simm16, immSExt16, Int32Regs>;
 def MULiu   : ArithLogicRRI<0b0001010, "muliu", mul, simm16, immSExt16, Int32Regs>;
+def DIVi    : ArithLogicRRI<0b0001100, "divi", sdiv, simm16, immSExt16, Int32Regs>;
+def DIViu   : ArithLogicRRI<0b0001101, "diviu", udiv, simm16, immSExt16, Int32Regs>;
 def ANDi    : ArithLogicRRI<0b0010100, "andi", and, simm16, immSExt16, Int32Regs>;
 def ORi     : ArithLogicRRI<0b0010110, "ori",  or, simm16, immSExt16, Int32Regs>;
 
-
 def ADDu    : ArithLogicRRR<0b0000011, "addu", add, Int32Regs>;
 def SUBu    : ArithLogicRRR<0b0000101, "subu", sub, Int32Regs>;
-def MULu    : ArithLogicRRR<0b0001001, "mul", mul, Int32Regs>;
+def MULu    : ArithLogicRRR<0b0001001, "mulu", mul, Int32Regs>;
+def DIV     : ArithLogicRRR<0b0001011, "div",  sdiv, Int32Regs>;
+def DIVu    : ArithLogicRRR<0b0001101, "divu", udiv, Int32Regs>;
+def MOD     : ArithLogicRRR<0b0001111, "mod", srem, Int32Regs>;
+def MODu    : ArithLogicRRR<0b0010001, "modu", urem, Int32Regs>;
 
 def AND     : ArithLogicRRR<0b0010011, "and", and, Int32Regs>;
 def XOR     : ArithLogicRRR<0b0010111, "xor", xor, Int32Regs>;
@@ -366,6 +378,14 @@ def OR      : ArithLogicRRR<0b0010101, "or",  or, Int32Regs>;
 def SHL     : ArithLogicRRR<0b0011001, "shl", shl, Int32Regs>;
 def SAR     : ArithLogicRRR<0b0011101, "sar", sra, Int32Regs>;
 def SLR     : ArithLogicRRR<0b0011011, "slr", srl, Int32Regs>;
+
+def EQ      : CompareRRR<0b0011111, "eq", seteq, Int32Regs>;
+def LT      : CompareRRR<0b0100011, "lt", setlt, Int32Regs>;
+def GT      : CompareRRR<0b0100111, "gt", setgt, Int32Regs>;
+def LE      : CompareRRR<0b0101011, "le", setle, Int32Regs>;
+def GE      : CompareRRR<0b0101111, "ge", setge, Int32Regs>;
+def LTU     : CompareRRR<0b0100101, "ltu",setult,Int32Regs>;
+def GTU     : CompareRRR<0b0101001, "gtu",setugt,Int32Regs>;
 
 /* 数据传输 */
 defm LW     : LoadM32<0b1100011,  "lw",  load_a>;
@@ -425,7 +445,14 @@ def JR : InstrI<0b1011111, (outs), (ins brtarget24:$imm16),
   let isBarrier = 1;
   let hasDelaySlot = 1;
 }
-
+def BNZ : InstrRI<0b1010010, (outs), (ins Int32Regs:$ra, brtarget24:$imm16),
+          "bnz\t$ra, $imm16",
+          [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
+}
 def BNE : InstrRRI<0b1010110, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
         "bne\t$ra, $rb, $imm16",
          [(brcond (i32 (setne Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
@@ -504,4 +531,9 @@ def ADJCALLSTACKUP   : AlexPseudo<125, (outs), (ins uimm16:$amt1, uimm16:$amt2),
 // 模式匹配
 def : Pat<(i32 immSExt16:$in),
           (LI imm:$in)>;
-
+def : Pat<(i32 addr:$in),
+          (LI simm16:$in)>;
+//def : Pat<(frameindex),
+//          (LI 0)>;
+//def addr :
+//  ComplexPattern<iPTR, 2, "SelectAddr", [frameindex], [SDNPWantParent]>;

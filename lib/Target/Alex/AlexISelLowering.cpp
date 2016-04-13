@@ -56,6 +56,9 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
     setOperationAction(ISD::VAARG,             MVT::Other, Expand);
     setOperationAction(ISD::VACOPY,            MVT::Other, Expand);
     setOperationAction(ISD::VAEND,             MVT::Other, Expand);
+    setOperationAction(ISD::BR_JT, MVT::Other, Expand);
+    /*setOperationAction(ISD::JumpTable, MVT::Other, Expand);
+    setOperationAction(ISD::TargetJumpTable, MVT::Other, Expand);*/
 
     //@llvm.stacksave
     // Use the default for now
@@ -367,7 +370,7 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
             llvm_unreachable("sret virtual register not created in the entry block");
         SDValue Val =
                 dag.getCopyFromReg(chain, dl, Reg, getPointerTy(dag.getDataLayout()));
-        unsigned RETVAL = Alex::R0;
+        unsigned RETVAL = Alex::T0;
 
         chain = dag.getCopyToReg(chain, dl, RETVAL, Val, Flag);
         Flag = chain.getValue(1);

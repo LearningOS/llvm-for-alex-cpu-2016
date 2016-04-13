@@ -59,14 +59,14 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
             // push $pc
             //MI->getOperand(1).getGlobal();
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(-4);
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::R1).addReg(Alex::SP).addImm(0);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::S0).addReg(Alex::SP).addImm(0);
 //            // addiu $r1, $pc, 12
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu),Alex::R1).addReg(Alex::PC).addImm(24);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu),Alex::S0).addReg(Alex::PC).addImm(24);
 //            // push $r1
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(-4);
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::R1).addReg(Alex::SP).addImm(0);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::S0).addReg(Alex::SP).addImm(0);
 //            // lw $r1, 4($sp)
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::R1).addReg(Alex::SP).addImm(-4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::S0).addReg(Alex::SP).addImm(-4);
             // j func
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::J)).addGlobalAddress(MI->getOperand(0).getGlobal());
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(8);
