@@ -1,6 +1,9 @@
 extern int fuck;
 
 struct Shit {
+    int _;
+    int __;
+    int ___;
     int a;
     int b;
 };
@@ -30,9 +33,7 @@ int test_access_global() {
   return fuck;
 }
 
-int test_struct() {
-  return smallShit.a;
-};
+
 
 int test_recur(int x) {
   if (x <= 0) return 0;
@@ -64,6 +65,7 @@ int test_array(int k) {
 }
 
 
+int test_struct();
 int test_function_pointer(int a) {
   fp fp1 = (fp)1234;
   fp1 = (fp)((int)fp1 + a);
@@ -74,6 +76,25 @@ int test_function_pointer(int a) {
 int test_32bit_int() {
   return 0x80000001;
 }
+
+int test_struct() {
+  smallShit.b = 3;
+  return smallShit.a;
+};
+
+int test_param_struct(struct Shit shit) {
+  return shit.a;
+}
+void test_param_struct1() {
+  test_param_struct(smallShit);
+}
+
+/*struct Shit test_return_struct() {
+  return smallShit;
+}
+int test_return_shit1() {
+  test_return_struct().a;
+}*/
 
 /*
 int test_switch(int a, int *ary) {

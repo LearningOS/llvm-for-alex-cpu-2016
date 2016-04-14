@@ -46,6 +46,22 @@ bool AlexDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, S
     // floating point load/store instruction (luxc1 or suxc1).
     const LSBaseSDNode* LS = 0;
 
+    if (CurDAG->isBaseWithConstantOffset(Addr)) {
+        ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Addr.getOperand(1));
+        if (isInt<16>(CN->getSExtValue())) {
+
+            // If the first operand is a FI, get the TargetFI Node
+            if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>
+                    (Addr.getOperand(0)))
+                Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+            else
+                Base = Addr.getOperand(0);
+
+            Offset = CurDAG->getTargetConstant(CN->getZExtValue(), DL, ValTy);
+            return true;
+        }
+    }
+
     if (Parent && (LS = dyn_cast<LSBaseSDNode>(Parent))) {
         EVT VT = LS->getMemoryVT();
 
@@ -55,6 +71,7 @@ bool AlexDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, S
                 return false;
         }
     }
+
 
     // if Address is FI, get the TargetFrameIndex.
     if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {

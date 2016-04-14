@@ -25,6 +25,10 @@ using namespace llvm;
 #include "AlexGenCallingConv.inc"
 #include "AlexTargetObjectFile.h"
 
+static const MCPhysReg O32IntRegs[] = {
+        Alex::T1, Alex::T2
+};
+
 const char *AlexTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch (Opcode) {
         case AlexISD::JmpLink:           return "AlexISD::JmpLink";
@@ -197,12 +201,11 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
 
         //@byval pass {
         if (Flags.isByVal()) {
-            assert(false);
             assert(Flags.getByValSize() &&
                    "ByVal args of size 0 should have been ignored by front-end.");
             assert(ByValArg != AlexCCInfo.byval_end());
-            //copyByValRegs(chain, dl, OutChains, dag, Flags, InVals, &*FuncArg,
-            //              AlexCCInfo, *ByValArg);
+            copyByValRegs(chain, dl, OutChains, dag, Flags, InVals, &*FuncArg,
+                          AlexCCInfo, *ByValArg);
             ++ByValArg;
             continue;
         }
@@ -277,7 +280,6 @@ void AlexTargetLowering::AlexCC::analyzeFormalArguments(const SmallVectorImpl<IS
         llvm_unreachable(nullptr);
     }
 }
-
 
 template<typename Ty>
 void AlexTargetLowering::AlexCC::
@@ -741,4 +743,52 @@ SDValue AlexTargetLowering::getTargetNode(JumpTableSDNode *N, EVT Ty,
                                           SelectionDAG &DAG,
                                           unsigned Flag) const {
     return DAG.getTargetJumpTable(N->getIndex(), Ty, Flag);
+}
+
+void AlexTargetLowering::copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDValue> &OutChains, SelectionDAG &DAG,
+                                       const ISD::ArgFlagsTy &Flags, SmallVectorImpl<SDValue> &InVals,
+                                       const Argument *FuncArg, const AlexCC &CC, const ByValArgInfo &ByVal) const {
+    MachineFunction &MF = DAG.getMachineFunction();
+    MachineFrameInfo *MFI = MF.getFrameInfo();
+    unsigned RegAreaSize = ByVal.NumRegs * CC.regSize();
+    unsigned FrameObjSize = std::max(Flags.getByValSize(), RegAreaSize);
+    int FrameObjOffset;
+
+    const ArrayRef<MCPhysReg> ByValArgRegs = CC.intArgRegs();
+
+    if (RegAreaSize)
+        FrameObjOffset = (int)CC.reservedArgArea() -
+                         (int)((CC.numIntArgRegs() - ByVal.FirstIdx) * CC.regSize());
+    else
+        FrameObjOffset = ByVal.Address;
+
+    // Create frame object.
+    EVT PtrTy = getPointerTy(DAG.getDataLayout());
+    int FI = MFI->CreateFixedObject(FrameObjSize, FrameObjOffset, true);
+    SDValue FIN = DAG.getFrameIndex(FI, PtrTy);
+    InVals.push_back(FIN);
+
+    if (!ByVal.NumRegs)
+        return;
+
+    // Copy arg registers.
+    MVT RegTy = MVT::getIntegerVT(CC.regSize() * 8);
+    const TargetRegisterClass *RC = getRegClassFor(RegTy);
+
+    for (unsigned I = 0; I < ByVal.NumRegs; ++I) {
+        unsigned ArgReg = ByValArgRegs[ByVal.FirstIdx + I];
+        unsigned VReg = addLiveIn(MF, ArgReg, RC);
+        unsigned Offset = I * CC.regSize();
+        SDValue StorePtr = DAG.getNode(ISD::ADD, DL, PtrTy, FIN,
+                                       DAG.getConstant(Offset, DL, PtrTy));
+        SDValue Store = DAG.getStore(Chain, DL, DAG.getRegister(VReg, RegTy),
+                                     StorePtr, MachinePointerInfo(FuncArg, Offset),
+                                     false, false, 0);
+        OutChains.push_back(Store);
+    }
+}
+
+
+const ArrayRef<MCPhysReg> AlexTargetLowering::AlexCC::intArgRegs() const {
+    return makeArrayRef(O32IntRegs);
 }

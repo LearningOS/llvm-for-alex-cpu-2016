@@ -17,3 +17,4 @@ let Namespace = "Alex" in {
   def PC     : AlexGPReg<7,  "pc">,     DwarfRegNum<[7]>;
 }
 def Int32Regs   : RegisterClass<"Alex", [i32], 32, (add T0, T1, T2, S0, S1, FP, SP, PC)>;
+def NonSpecialRegs: RegisterClass<"Alex", [i32], 32, (add T1, T2, S0, S1)>;

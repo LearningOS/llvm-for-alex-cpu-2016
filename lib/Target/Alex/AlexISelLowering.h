@@ -121,6 +121,9 @@ namespace llvm {
                                                             MVT LocVT,
                                                             CCValAssign::LocInfo LocInfo,
                                                             ISD::ArgFlagsTy ArgFlags);
+
+            const ArrayRef<MCPhysReg> intArgRegs() const;
+
             /// hasByValArg - Returns true if function has byval arguments.
             bool hasByValArg() const { return !ByValArgs.empty(); }
             unsigned regSize() const { return 4; }
@@ -206,6 +209,9 @@ namespace llvm {
             return DAG.getNode(ISD::ADD, DL, Ty,
                                DAG.getNode(AlexISD::Hi, DL, Ty, Hi),
                                DAG.getNode(AlexISD::Lo, DL, Ty, Lo));
+        }
+        bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const override {
+            return false;
         }
     };
 }
