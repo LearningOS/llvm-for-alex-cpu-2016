@@ -32,6 +32,7 @@ namespace llvm {
 
         void printUnsignedImm(const MCInst *MI, int opNum, raw_ostream &O);
         void printMemOperand(const MCInst *MI, int opNum, raw_ostream &O);
+        void printMemAddrOperand(const MCInst *MI, int opNum, raw_ostream &O);
 
         void printMemOperandEA(const MCInst *MI, int opNum, raw_ostream &O);
     };

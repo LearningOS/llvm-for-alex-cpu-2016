@@ -114,3 +114,14 @@ void AlexInstPrinter::printMemOperand(const MCInst *MI, int opNum, raw_ostream &
     printOperand(MI, opNum, O);
     O << ")";
 }
+
+void AlexInstPrinter::printMemAddrOperand(const MCInst *MI, int opNum, raw_ostream &O) {
+    // Load/Store memory operands -- imm($reg)
+    // If PIC target the target is loaded as the
+    // pattern ld $t9,%call16($gp)
+    printOperand(MI, opNum, O);
+    O << ", ";
+    printOperand(MI, opNum+1, O);
+    O << "\t; lea";
+}
+

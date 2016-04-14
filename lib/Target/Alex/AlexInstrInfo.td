@@ -208,6 +208,12 @@ def mem : Operand<iPTR> {
   let EncoderMethod = "getMemEncoding";
 }
 
+def memaddr : Operand<iPTR> {
+  let PrintMethod = "printMemAddrOperand";
+  let MIOperandInfo = (ops Int32Regs, simm16);
+  let EncoderMethod = "getMemAddrEncoding";
+}
+
 // Transformation Function - get the lower 16 bits.
 def LO16 : SDNodeXForm<imm, [{
   return getImm(N, N->getZExtValue() & 0xffff);
@@ -263,6 +269,9 @@ class AlignedStore<PatFrag Node> :
   return SD->getMemoryVT().getSizeInBits()/8 <= SD->getAlignment();
 }]>;
 
+class AlignedLea<PatFrag Node> :
+  PatFrag<(ops node:$ptr), (Node node:$ptr), [{ return true; }]>;
+
 // Load/Store PatFrags.
 def load_a          : AlignedLoad<load>;
 def store_a         : AlignedStore<store>;
@@ -312,6 +321,14 @@ class LoadM<bits<7> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
   let isPseudo = Pseudo;
 }
 
+class LeaM<bits<7> op, string instr_asm, RegisterClass RC,
+            Operand MemOpnd, bit Pseudo>:
+  FMem<op, (outs RC:$ra), (ins MemOpnd:$addr),
+     !strconcat(instr_asm, "\t$ra, $addr"),
+     [(set RC:$ra, addr:$addr)], NoItinerary> {
+  let isPseudo = Pseudo;
+}
+
 class StoreM<bits<7> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
              Operand MemOpnd, bit Pseudo>:
   FMem<op, (outs), (ins RC:$ra, MemOpnd:$addr),
@@ -324,6 +341,10 @@ class StoreM<bits<7> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
 multiclass LoadM32<bits<7> op, string instr_asm, PatFrag OpNode,
                    bit Pseudo = 0> {
   def #NAME# : LoadM<op, instr_asm, OpNode, Int32Regs, mem, Pseudo>;
+}
+multiclass LeaM32<bits<7> op, string instr_asm,
+                   bit Pseudo = 0> {
+  def #NAME# : LeaM<op, instr_asm, Int32Regs, memaddr, Pseudo>;
 }
 
 // 32-bit store.
@@ -356,16 +377,22 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 //===----------------------------------------------------------------------===//
 
 /* 算数逻辑指令 */
-def ADDiu   : ArithLogicRRI<0b0000100, "addiu", add, simm16, immSExt16, Int32Regs>;
-def MULiu   : ArithLogicRRI<0b0001010, "muliu", mul, simm16, immSExt16, Int32Regs>;
+
+def ADDi    : ArithLogicRRI<0b0000010, "addi",  add, simm16, immSExt16, Int32Regs>;
+//def ADDiu   : ArithLogicRRI<0b0000100, "addiu", add, simm16, immSExt16, Int32Regs>;
+def SUB     : ArithLogicRRI<0b0000101, "sub",   sub, simm16, immSExt16, Int32Regs>;
+def MULi    : ArithLogicRRI<0b0001000, "muli", mul, simm16, immSExt16, Int32Regs>;
+//def MULiu   : ArithLogicRRI<0b0001010, "muliu", mul, simm16, immSExt16, Int32Regs>;
 def DIVi    : ArithLogicRRI<0b0001100, "divi", sdiv, simm16, immSExt16, Int32Regs>;
 def DIViu   : ArithLogicRRI<0b0001101, "diviu", udiv, simm16, immSExt16, Int32Regs>;
 def ANDi    : ArithLogicRRI<0b0010100, "andi", and, simm16, immSExt16, Int32Regs>;
 def ORi     : ArithLogicRRI<0b0010110, "ori",  or, simm16, immSExt16, Int32Regs>;
 
-def ADDu    : ArithLogicRRR<0b0000011, "addu", add, Int32Regs>;
-def SUBu    : ArithLogicRRR<0b0000101, "subu", sub, Int32Regs>;
-def MULu    : ArithLogicRRR<0b0001001, "mulu", mul, Int32Regs>;
+def ADD     : ArithLogicRRR<0b0000001, "add",  add, Int32Regs>;
+//def ADDu    : ArithLogicRRR<0b0000011, "addu", add, Int32Regs>;
+def SUBi    : ArithLogicRRR<0b0000101, "subi", sub, Int32Regs>;
+def MUL     : ArithLogicRRR<0b0000111, "mul", mul, Int32Regs>;
+//def MULu    : ArithLogicRRR<0b0001001, "mulu", mul, Int32Regs>;
 def DIV     : ArithLogicRRR<0b0001011, "div",  sdiv, Int32Regs>;
 def DIVu    : ArithLogicRRR<0b0001101, "divu", udiv, Int32Regs>;
 def MOD     : ArithLogicRRR<0b0001111, "mod", srem, Int32Regs>;
@@ -390,6 +417,7 @@ def GTU     : CompareRRR<0b0101001, "gtu",setugt,Int32Regs>;
 /* 数据传输 */
 defm LW     : LoadM32<0b1100011,  "lw",  load_a>;
 defm SW     : StoreM32<0b1110000, "sw",  store_a>;
+defm LEAW   : LeaM32<0b0000100, "add">;
 
 def LI      : InstrRI<0b1101011, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "li\t$ra, $imm16",
@@ -411,7 +439,7 @@ class WrapperPat<SDNode node, Instruction ORiOp, RegisterClass RC>:
       Pat<(AlexWrapper RC:$gp, node:$in),
               (ORiOp RC:$gp, node:$in)>;
 
-def : WrapperPat<tglobaladdr, ADDiu, Int32Regs>;
+def : WrapperPat<tglobaladdr, ADDi, Int32Regs>;
 
 
 /* 分支语句 */
@@ -532,7 +560,7 @@ def ADJCALLSTACKUP   : AlexPseudo<125, (outs), (ins uimm16:$amt1, uimm16:$amt2),
 def : Pat<(i32 immSExt16:$in),
           (LI imm:$in)>;
 def : Pat<(i32 addr:$in),
-          (LI simm16:$in)>;
+          (LW mem:$in)>;
 //def : Pat<(frameindex),
 //          (LI 0)>;
 //def addr :

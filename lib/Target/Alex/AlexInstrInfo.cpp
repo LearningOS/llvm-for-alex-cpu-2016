@@ -24,7 +24,7 @@ void AlexInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
                                      MachineBasicBlock &MBB,
                                      MachineBasicBlock::iterator I) const {
     DebugLoc DL = I != MBB.end() ? I->getDebugLoc() : DebugLoc();
-    unsigned ADDiu = Alex::ADDiu;
+    unsigned ADDiu = Alex::ADDi;
     BuildMI(MBB, I, DL, get(ADDiu), SP).addReg(SP).addImm(Amount);
 }
 
@@ -58,18 +58,18 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
         case Alex::Call:
             // push $pc
             //MI->getOperand(1).getGlobal();
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(-4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::S0).addReg(Alex::SP).addImm(0);
 //            // addiu $r1, $pc, 12
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu),Alex::S0).addReg(Alex::PC).addImm(24);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi),Alex::S0).addReg(Alex::PC).addImm(24);
 //            // push $r1
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(-4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::S0).addReg(Alex::SP).addImm(0);
 //            // lw $r1, 4($sp)
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::S0).addReg(Alex::SP).addImm(-4);
             // j func
             BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::J)).addGlobalAddress(MI->getOperand(0).getGlobal());
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::SP).addReg(Alex::SP).addImm(8);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(8);
             break;
     }
 
