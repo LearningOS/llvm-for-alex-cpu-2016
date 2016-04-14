@@ -55,7 +55,7 @@ int test_get_addr(int x) {
   return (int) &x;
 }
 
-/*
+
 int test_array(int k) {
   int ar[100];
   for (int i = 0; i < k; ++i)
@@ -64,12 +64,18 @@ int test_array(int k) {
 }
 
 
-int test_function_pointer() {
-  fp fp1 = (fp)0;
+int test_function_pointer(int a) {
+  fp fp1 = (fp)1234;
+  fp1 = (fp)((int)fp1 + a);
   fp fp2 = (fp)test_struct;
   return fp1() + fp2();
 }
 
+int test_32bit_int() {
+  return 0x80000001;
+}
+
+/*
 int test_switch(int a, int *ary) {
   switch(a) {
     case 1:
@@ -84,5 +90,5 @@ int test_switch(int a, int *ary) {
       return 0;
   }
   return -1;
-}*/
-
+}
+*/

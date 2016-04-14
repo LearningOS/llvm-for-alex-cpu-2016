@@ -47,7 +47,8 @@ namespace llvm {
 
             Sync,
             Push,
-            Pop
+            Pop,
+            LI32
         };
     }
 
@@ -193,6 +194,19 @@ namespace llvm {
         SDValue passArgOnStack(SDValue StackPtr, unsigned Offset,
                                                    SDValue Chain, SDValue Arg, SDLoc DL,
                                                    bool IsTailCall, SelectionDAG &DAG) const;
+
+        SDValue lowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
+        SDValue getTargetNode(JumpTableSDNode *N, EVT Ty, SelectionDAG &DAG,
+                              unsigned Flag) const;
+        template<class NodeTy>
+        SDValue getAddrNonPIC(NodeTy *N, EVT Ty, SelectionDAG &DAG) const {
+            SDLoc DL(N);
+            SDValue Lo = getTargetNode(N, Ty, DAG, 0);
+            SDValue Hi = getTargetNode(N, Ty, DAG, 1);
+            return DAG.getNode(ISD::ADD, DL, Ty,
+                               DAG.getNode(AlexISD::Hi, DL, Ty, Hi),
+                               DAG.getNode(AlexISD::Lo, DL, Ty, Lo));
+        }
     };
 }
 

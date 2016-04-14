@@ -77,6 +77,12 @@ class AlexPseudo<bits<7> opc, dag outs, dag ins, string asmstr, list<dag> patter
   let isPseudo = 1;
 }
 
+class InstrPlain<bits<7> op, string asmstr, list<dag> pattern,
+         InstrItinClass itin>: AlexInst<(outs), (ins), asmstr, pattern, itin, FrmL>
+{
+  let Opcode = op;
+  let Inst{24-0} = 0;
+}
 class InstrR<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
 {
@@ -159,6 +165,7 @@ class InstrI<bits<7> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 def SDT_AlexRet          : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
 def SDT_AlexPush         : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
 def SDT_AlexPop          : SDTypeProfile<1, 0, [SDTCisInt<0>]>;
+def SDT_AlexLI32         : SDTypeProfile<1, 1, [SDTCisInt<0>]>;
 def AlexPush : SDNode<"AlexISD::Push", SDT_AlexPush,
                     [SDNPHasChain]>;
 def AlexPop  : SDNode<"AlexISD::Pop", SDT_AlexPop,
@@ -166,7 +173,9 @@ def AlexPop  : SDNode<"AlexISD::Pop", SDT_AlexPop,
 // Return
 def AlexRet : SDNode<"AlexISD::Ret", SDTNone,
                      [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
-
+def AlexHi    : SDNode<"AlexISD::Hi", SDTIntUnaryOp>;
+def AlexLo    : SDNode<"AlexISD::Lo", SDTIntUnaryOp>;
+def AlexLI32  : SDNode<"AlexISD::LI32", SDT_AlexLI32>;
 //===----------------------------------------------------------------------===//
 // Alex Instruction Predicate Definitions.
 //===----------------------------------------------------------------------===//
@@ -192,6 +201,9 @@ class AlexInstAlias<string Asm, dag Result, bit Emit = 0b1> :
 // Signed Operand
 def simm16      : Operand<i32> {
   let DecoderMethod= "DecodeSimm16";
+}
+def simm32      : Operand<i32> {
+  let DecoderMethod= "DecodeSimm32";
 }
 
 def shamt       : Operand<i32>;
@@ -227,6 +239,7 @@ def HI16 : SDNodeXForm<imm, [{
 // Node immediate fits as 16-bit sign extended on target immediate.
 // e.g. addi, andi
 def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
+def immSExt32  : PatLeaf<(imm), [{ return isInt<32>(N->getSExtValue()); }]>;
 
 // Node immediate fits as 16-bit zero extended on target immediate.
 // The LO16 param means that only the lower 16 bits of the node
@@ -378,24 +391,24 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 
 /* 算数逻辑指令 */
 
-def ADDi    : ArithLogicRRI<0b0000010, "addi",  add, simm16, immSExt16, Int32Regs>;
-//def ADDiu   : ArithLogicRRI<0b0000100, "addiu", add, simm16, immSExt16, Int32Regs>;
-def SUB     : ArithLogicRRI<0b0000101, "sub",   sub, simm16, immSExt16, Int32Regs>;
-def MULi    : ArithLogicRRI<0b0001000, "muli", mul, simm16, immSExt16, Int32Regs>;
-//def MULiu   : ArithLogicRRI<0b0001010, "muliu", mul, simm16, immSExt16, Int32Regs>;
-def DIVi    : ArithLogicRRI<0b0001100, "divi", sdiv, simm16, immSExt16, Int32Regs>;
-def DIViu   : ArithLogicRRI<0b0001101, "diviu", udiv, simm16, immSExt16, Int32Regs>;
-def ANDi    : ArithLogicRRI<0b0010100, "andi", and, simm16, immSExt16, Int32Regs>;
-def ORi     : ArithLogicRRI<0b0010110, "ori",  or, simm16, immSExt16, Int32Regs>;
+def ADDi    : ArithLogicRRI<0b0000010, "addi",  add,  simm16, immSExt16, Int32Regs>;
+def ADDiu   : ArithLogicRRI<0b0000100, "addiu", add,  uimm16, immZExt16, Int32Regs>;
+def SUBi    : ArithLogicRRI<0b0000101, "subi",  sub,  simm16, immSExt16, Int32Regs>;
+def MULi    : ArithLogicRRI<0b0001000, "muli",  mul,  simm16, immSExt16, Int32Regs>;
+def MULiu   : ArithLogicRRI<0b0001010, "muliu", mul,  uimm16, immZExt16, Int32Regs>;
+def DIVi    : ArithLogicRRI<0b0001100, "divi",  sdiv, simm16, immSExt16, Int32Regs>;
+def DIViu   : ArithLogicRRI<0b0001101, "diviu", udiv, uimm16, immZExt16, Int32Regs>;
+def ANDi    : ArithLogicRRI<0b0010100, "andi",  and,  uimm16, immZExt16, Int32Regs>;
+def ORi     : ArithLogicRRI<0b0010110, "ori",   or,   uimm16, immZExt16, Int32Regs>;
 
-def ADD     : ArithLogicRRR<0b0000001, "add",  add, Int32Regs>;
-//def ADDu    : ArithLogicRRR<0b0000011, "addu", add, Int32Regs>;
-def SUBi    : ArithLogicRRR<0b0000101, "subi", sub, Int32Regs>;
-def MUL     : ArithLogicRRR<0b0000111, "mul", mul, Int32Regs>;
-//def MULu    : ArithLogicRRR<0b0001001, "mulu", mul, Int32Regs>;
+def ADD     : ArithLogicRRR<0b0000001, "add",  add,  Int32Regs>;
+def ADDu    : ArithLogicRRR<0b0000011, "addu", add,  Int32Regs>;
+def SUB     : ArithLogicRRR<0b0000101, "sub",  sub,  Int32Regs>;
+def MUL     : ArithLogicRRR<0b0000111, "mul",  mul,  Int32Regs>;
+def MULu    : ArithLogicRRR<0b0001001, "mulu", mul,  Int32Regs>;
 def DIV     : ArithLogicRRR<0b0001011, "div",  sdiv, Int32Regs>;
 def DIVu    : ArithLogicRRR<0b0001101, "divu", udiv, Int32Regs>;
-def MOD     : ArithLogicRRR<0b0001111, "mod", srem, Int32Regs>;
+def MOD     : ArithLogicRRR<0b0001111, "mod",  srem, Int32Regs>;
 def MODu    : ArithLogicRRR<0b0010001, "modu", urem, Int32Regs>;
 
 def AND     : ArithLogicRRR<0b0010011, "and", and, Int32Regs>;
@@ -422,6 +435,9 @@ defm LEAW   : LeaM32<0b0000100, "add">;
 def LI      : InstrRI<0b1101011, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "li\t$ra, $imm16",
             [(set Int32Regs:$ra, (i32 immSExt16:$imm16))], NoItinerary>;
+def LIH     : InstrRI<0b1101101, (outs Int32Regs:$ra), (ins simm16:$imm16),
+            "lih\t$ra, $imm16",
+            [(set Int32Regs:$ra, (i32 immSExt16:$imm16))], NoItinerary>;
 
 def PUSH    : InstrR<0b1111001, (outs), (ins Int32Regs:$ra), "push\t$ra",
             [(AlexPush Int32Regs:$ra)], NoItinerary>;
@@ -432,15 +448,23 @@ def MTRA    : InstrRI<0b1111101, (outs), (ins Int32Regs:$ra, simm16:$imm16),
             "mtra\t$imm16($ra)", [], NoItinerary>;
 def MFRA    : InstrR<0b1111110, (outs Int32Regs:$ra), (ins),
             "mfra\t$ra", [], NoItinerary>;
+def RET     : InstrPlain<0b1111110, "ret", [], NoItinerary>;
 
-/* Global Address */
-def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntBinOp>;
-class WrapperPat<SDNode node, Instruction ORiOp, RegisterClass RC>:
-      Pat<(AlexWrapper RC:$gp, node:$in),
-              (ORiOp RC:$gp, node:$in)>;
 
-def : WrapperPat<tglobaladdr, ADDi, Int32Regs>;
+/* Global Address/Jump table */
 
+/*def : Pat<(AlexHi tjumptable:$in), (LIH tjumptable:$in)>;
+def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
+def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
+              (ORi Int32Regs:$hi, tjumptable:$lo)>;
+*/
+def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntUnaryOp>;
+class WrapperPat<SDNode node, RegisterClass RC>:
+      Pat<(AlexWrapper node:$in),
+              (LI node:$in)>;
+
+def : WrapperPat<tglobaladdr, Int32Regs>;
+//def : WrapperPat<tjumptable,  ORi, Int32Regs>;
 
 /* 分支语句 */
 //def JR      : JumpFR<0b1011111, "jr", Int32Regs>;
@@ -449,7 +473,7 @@ def JRRA    : InstrR<0b1100010, (outs), (ins Int32Regs:$ra), "jrra\t$ra", [], No
 let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
     def RetLR : AlexPseudo<123, (outs), (ins), "", [(AlexRet)]>;
 
-def RET     : RetBase<Int32Regs>;
+def RETB     : RetBase<Int32Regs>;
 
 class CBranch24<bits<7> op, string instr_asm, RegisterClass RC,
                    list<Register> UseRegs>:
@@ -514,32 +538,43 @@ def calltarget  : Operand<iPTR> {
   let EncoderMethod = "getJumpTargetOpValue";
 }
 
-def SDT_AlexJmpLink      : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
-def AlexJmpLink : SDNode<"AlexISD::JmpLink",SDT_AlexJmpLink,
+def SDT_AlexCallLink      : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
+def AlexCallLink : SDNode<"AlexISD::JmpLink",SDT_AlexCallLink,
                          [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue,
                           SDNPVariadic]>;
 
 let isCall=1, hasDelaySlot=1 in {
-  class JumpLink<bits<7> op, string instr_asm>:
+  class CallLink<bits<7> op, string instr_asm>:
     InstrI<op, (outs), (ins calltarget:$imm16, variable_ops),
-       !strconcat(instr_asm, "\t$imm16"), [/*(AlexJmpLink imm:$imm16)*/],
+       !strconcat(instr_asm, "\t$imm16"), [/*(AlexCallLink imm:$imm16)*/],
        NoItinerary>;
 
-  class JumpLinkReg<bits<7> op, string instr_asm,
+  class CallLinkReg<bits<7> op, string instr_asm,
                     RegisterClass RC>:
     InstrR<op, (outs), (ins RC:$ra, variable_ops),
-       !strconcat(instr_asm, "\t$ra"), [(AlexJmpLink RC:$ra)], NoItinerary>;
+       !strconcat(instr_asm, "\t$ra"), [/*(AlexCallLink RC:$ra)*/], NoItinerary>;
 }
 
-def J    : JumpLink<0x3b, "j">;
+def CALL    : CallLink<0b1100010, "call">;
 
-//def : Pat<(AlexJmpLink (i32 tglobaladdr:$dst)),
+//def : Pat<(AlexCallLink (i32 tglobaladdr:$dst)),
 //          (J tglobaladdr:$dst)>;
-//def : Pat<(AlexJmpLink (i32 texternalsym:$dst)),
+//def : Pat<(AlexCallLink (i32 texternalsym:$dst)),
 //          (J texternalsym:$dst)>;
 
-let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
-    def Call : AlexPseudo<120, (outs), (ins calltarget:$imm16), "", [(AlexJmpLink (i32 tglobaladdr:$imm16))]>;
+let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+    def CALLg : AlexPseudo<0, (outs), (ins calltarget:$imm16), "",
+     [(AlexCallLink (i32 tglobaladdr:$imm16))]>;
+let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+    def CALLi : AlexPseudo<0, (outs), (ins calltarget:$imm16), "",
+     [(AlexCallLink (i32 imm:$imm16))]>;
+let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+    def CALLr : AlexPseudo<0, (outs), (ins Int32Regs:$ra), "",
+     [(AlexCallLink Int32Regs:$ra)]>;
+
+
+def LI32 : AlexPseudo<0, (outs Int32Regs:$ra), (ins simm32:$imm), "",
+    [(set Int32Regs:$ra, (AlexLI32 immSExt32:$imm))]>;
 
 def SDT_AlexCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>]>;
 def SDT_AlexCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>, SDTCisVT<1, i32>]>;
@@ -555,12 +590,16 @@ def ADJCALLSTACKUP   : AlexPseudo<125, (outs), (ins uimm16:$amt1, uimm16:$amt2),
                                   "!ADJCALLSTACKUP $amt1",
                                   [(callseq_end timm:$amt1, timm:$amt2)]>;
 
-
 // 模式匹配
 def : Pat<(i32 immSExt16:$in),
           (LI imm:$in)>;
 def : Pat<(i32 addr:$in),
           (LW mem:$in)>;
+
+def : Pat<(i32 immSExt32:$in),
+          (LI32 imm:$in)>;
+
+
 //def : Pat<(frameindex),
 //          (LI 0)>;
 //def addr :

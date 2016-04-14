@@ -24,8 +24,8 @@ void AlexInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
                                      MachineBasicBlock &MBB,
                                      MachineBasicBlock::iterator I) const {
     DebugLoc DL = I != MBB.end() ? I->getDebugLoc() : DebugLoc();
-    unsigned ADDiu = Alex::ADDi;
-    BuildMI(MBB, I, DL, get(ADDiu), SP).addReg(SP).addImm(Amount);
+    unsigned ADDi = Alex::ADDi;
+    BuildMI(MBB, I, DL, get(ADDi), SP).addReg(SP).addImm(Amount);
 }
 
 MachineMemOperand *AlexInstrInfo::GetMemOperand(MachineBasicBlock &MBB, int FI,
@@ -43,33 +43,67 @@ void AlexInstrInfo::expandRetLR(MachineBasicBlock &MBB,
     //loadRegFromStackSlot(MBB, I, Alex::LR, 0, nullptr, nullptr);
 
     //BuildMI(MBB, I, I->getDebugLoc(), get(Alex::LW)).addReg(Alex::RA).addReg(Alex::FP).addImm(0);
-    BuildMI(MBB, I, I->getDebugLoc(), get(Alex::JRRA)).addReg(Alex::RA);
+   // BuildMI(MBB, I, I->getDebugLoc(), get(Alex::JRRA)).addReg(Alex::RA);
+    BuildMI(MBB, I, I->getDebugLoc(), get(Alex::RET));
 }
 bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 //@expandPostRAPseudo-body
     MachineBasicBlock &MBB = *MI->getParent();
 
+    int instructionsAfterSavedPC = 1; // 从t0 = pc+xx到if之间一共有1条指令
     switch(MI->getDesc().getOpcode()) {
         default:
             return false;
         case Alex::RetLR:
             expandRetLR(MBB, MI);
             break;
-        case Alex::Call:
-            // push $pc
-            //MI->getOperand(1).getGlobal();
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::S0).addReg(Alex::SP).addImm(0);
-//            // addiu $r1, $pc, 12
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi),Alex::S0).addReg(Alex::PC).addImm(24);
-//            // push $r1
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::S0).addReg(Alex::SP).addImm(0);
-//            // lw $r1, 4($sp)
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::S0).addReg(Alex::SP).addImm(-4);
-            // j func
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::J)).addGlobalAddress(MI->getOperand(0).getGlobal());
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(8);
+        case Alex::LI32: {
+            auto reg = MI->getOperand(0).getReg();
+            auto val = MI->getOperand(1).getImm();
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), reg).addImm(val & 0xFFFF);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIH), reg).addImm((val >> 16) & 0xFFFF);
+            break;
+        }
+
+        case Alex::CALLr:
+            instructionsAfterSavedPC += 1;
+        case Alex::CALLi:
+            instructionsAfterSavedPC += 2;
+        case Alex::CALLg:
+            instructionsAfterSavedPC += 1;
+            // save t0, t1, t2
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4*4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T0).addReg(Alex::SP).addImm(4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T1).addReg(Alex::SP).addImm(8);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T2).addReg(Alex::SP).addImm(12);
+
+            // push ($pc+xx)  # ret address
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::T0).addReg(Alex::PC).addImm(instructionsAfterSavedPC*4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T0).addReg(Alex::SP).addImm(0);
+
+            // call func
+            if (MI->getDesc().getOpcode() == Alex::CALLg) {
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addGlobalAddress(MI->getOperand(0).getGlobal());
+            }
+            else if (MI->getDesc().getOpcode() == Alex::CALLi) {
+                auto imm = MI->getOperand(0).getImm();
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), Alex::T0).addImm(imm & 0xFFFF);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIH), Alex::T0).addImm((imm>>16) & 0xFFFF);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addReg(Alex::T0);
+            }
+            else {
+                // temporary restore t0, t1, t2 in case that it uses t0~t2 as call addr
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T0).addReg(Alex::SP).addImm(4);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T1).addReg(Alex::SP).addImm(8);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T2).addReg(Alex::SP).addImm(12);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addReg(MI->getOperand(0).getReg());
+            }
+
+            // restore t0, t1, t2
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T0).addReg(Alex::SP).addImm(0);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T1).addReg(Alex::SP).addImm(4);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T2).addReg(Alex::SP).addImm(8);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4*3);
             break;
     }
 
@@ -105,4 +139,22 @@ void AlexInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlo
   assert(Opc && "Register class not handled!");
   BuildMI(MBB, I, DL, get(Opc), DestReg).addFrameIndex(FI).addImm(0)
           .addMemOperand(MMO);
+}
+
+void AlexInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
+                                  MachineBasicBlock::iterator I, DebugLoc DL,
+                                  unsigned DestReg, unsigned SrcReg,
+                                  bool KillSrc) const {
+    unsigned Opc = 0;
+
+    if (Alex::Int32RegsRegClass.contains(DestReg)) { // Copy to CPU Reg.
+        if (Alex::Int32RegsRegClass.contains(SrcReg))
+            Opc = Alex::ADDi;
+    }
+
+    assert(Opc  && DestReg && SrcReg && "Cannot copy registers");
+
+    BuildMI(MBB, I, DL, get(Opc), DestReg).
+                    addReg(SrcReg, getKillRegState(KillSrc)).
+                    addImm(0);
 }

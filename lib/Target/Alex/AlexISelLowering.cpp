@@ -39,6 +39,7 @@ const char *AlexTargetLowering::getTargetNodeName(unsigned Opcode) const {
         case AlexISD::Wrapper:           return "AlexISD::Wrapper";
         case AlexISD::Push:              return "AlexISD::Push";
         case AlexISD::Pop:               return "AlexISD::Pop";
+        case AlexISD::LI32:              return "AlexISD::LI32";
         default:                         return NULL;
     }
 }
@@ -48,17 +49,16 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
                                        const AlexRegisterInfo* registerInfo)
         : TargetLowering(*targetMachine), subtarget(subtarget) {
     // disable dag nodes here
-    setOperationAction(ISD::BR_CC, MVT::i32, Expand);
-    setOperationAction(ISD::VASTART,            MVT::Other, Custom);
-    setOperationAction(ISD::GlobalAddress, MVT::i32, Custom);
+    setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
+    setOperationAction(ISD::VASTART,           MVT::Other, Expand);
+    setOperationAction(ISD::GlobalAddress,     MVT::i32,   Custom);
     // Support va_arg(): variable numbers (not fixed numbers) of arguments
     //  (parameters) for function all
     setOperationAction(ISD::VAARG,             MVT::Other, Expand);
     setOperationAction(ISD::VACOPY,            MVT::Other, Expand);
     setOperationAction(ISD::VAEND,             MVT::Other, Expand);
-    setOperationAction(ISD::BR_JT, MVT::Other, Expand);
-    /*setOperationAction(ISD::JumpTable, MVT::Other, Expand);
-    setOperationAction(ISD::TargetJumpTable, MVT::Other, Expand);*/
+    setOperationAction(ISD::BR_JT,             MVT::Other, Expand);
+    setOperationAction(ISD::JumpTable,         MVT::i32,   Custom);
 
     //@llvm.stacksave
     // Use the default for now
@@ -74,7 +74,7 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
       //  case ISD::BRCOND:             return lowerBRCOND(Op, DAG);
         case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
       //  case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
-       // case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
+        case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
        // case ISD::SELECT:             return lowerSELECT(Op, DAG);
     }
     return SDValue();
@@ -104,9 +104,9 @@ SDValue AlexTargetLowering::getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
                       unsigned Flag, SDValue Chain,
                       const MachinePointerInfo &PtrInfo) const {
     SDLoc DL(N);
-    SDValue Tgt = DAG.getNode(AlexISD::Wrapper, DL, Ty, getGlobalReg(DAG, Ty),
+    return DAG.getNode(AlexISD::Wrapper, DL, Ty,
                               getTargetNode(N, Ty, DAG, Flag));
-    return DAG.getLoad(Ty, DL, Chain, Tgt, PtrInfo, false, false, false, 0);
+    //return DAG.getLoad(Ty, DL, Chain, Tgt, PtrInfo, false, false, false, 0);
 }
 SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
                                                SelectionDAG &DAG) const {
@@ -728,4 +728,17 @@ AlexTargetLowering::LowerCallResult(SDValue Chain, SDValue InFlag,
     }
 
     return Chain;
+}
+
+SDValue AlexTargetLowering::
+lowerJumpTable(SDValue Op, SelectionDAG &DAG) const
+{
+    JumpTableSDNode *N = cast<JumpTableSDNode>(Op);
+    EVT Ty = Op.getValueType();
+    return getAddrNonPIC(N, Ty, DAG);
+}
+SDValue AlexTargetLowering::getTargetNode(JumpTableSDNode *N, EVT Ty,
+                                          SelectionDAG &DAG,
+                                          unsigned Flag) const {
+    return DAG.getTargetJumpTable(N->getIndex(), Ty, Flag);
 }

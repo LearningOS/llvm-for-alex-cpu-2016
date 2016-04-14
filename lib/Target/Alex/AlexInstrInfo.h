@@ -36,6 +36,10 @@ namespace llvm {
         void loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                                   unsigned DestReg, int FI, const TargetRegisterClass *RC,
                                   const TargetRegisterInfo *TRI) const override;
+        void copyPhysReg(MachineBasicBlock &MBB,
+                         MachineBasicBlock::iterator I, DebugLoc DL,
+                         unsigned DestReg, unsigned SrcReg,
+                         bool KillSrc) const override;
     };
 }
 
