@@ -1,4 +1,4 @@
-extern int fuck;
+int fuck;
 
 struct Shit {
     int _;
@@ -113,3 +113,6 @@ int test_switch(int a, int *ary) {
   return -1;
 }
 */
+int main() {
+  return 0;
+}

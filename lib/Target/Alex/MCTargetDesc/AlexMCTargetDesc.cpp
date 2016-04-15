@@ -1,5 +1,7 @@
 #include <AlexTargetMachine.h>
+#include "MCTargetDesc/AlexTargetStreamer.h"
 #include "AlexFrameLowering.h"
+#include "AlexMCTargetDesc.h"
 #include "InstPrinter/AlexInstPrinter.h"
 #include "AlexMCAsmInfo.h"
 #include "llvm/MC/MachineLocation.h"
@@ -91,6 +93,19 @@ static MCInstPrinter *createAlexMCInstPrinter(const Triple &T,
     return new AlexInstPrinter(MAI, MII, MRI);
 }
 
+static MCStreamer *createMCStreamer(const Triple &TT, MCContext &Context,
+                                    MCAsmBackend &MAB, raw_pwrite_stream &OS,
+                                    MCCodeEmitter *Emitter, bool RelaxAll) {
+    return createELFStreamer(Context, MAB, OS, Emitter, RelaxAll);
+}
+
+static MCTargetStreamer *createAlexAsmTargetStreamer(MCStreamer &S,
+                                                     formatted_raw_ostream &OS,
+                                                     MCInstPrinter *InstPrint,
+                                                     bool isVerboseAsm) {
+    return new AlexTargetAsmStreamer(S, OS);
+}
+
 //@2 {
 extern "C" void LLVMInitializeAlexTargetMC() {
     for (Target *T : {&TheAlexTarget, &TheAlexTarget}) {
@@ -113,6 +128,18 @@ extern "C" void LLVMInitializeAlexTargetMC() {
         // Register the MCInstPrinter.
         TargetRegistry::RegisterMCInstPrinter(*T,
                                               createAlexMCInstPrinter);
+
+        TargetRegistry::RegisterMCCodeEmitter(TheAlexTarget,
+                                              createAlexMCCodeEmitterEL);
+
+        // Register the asm backend.
+        TargetRegistry::RegisterMCAsmBackend(TheAlexTarget,
+                                             createAlexAsmBackendEL32);
+        // Register the elf streamer.
+        TargetRegistry::RegisterELFStreamer(*T, createMCStreamer);
+
+        // Register the asm target streamer.
+        TargetRegistry::RegisterAsmTargetStreamer(*T, createAlexAsmTargetStreamer);
     }
 
 }

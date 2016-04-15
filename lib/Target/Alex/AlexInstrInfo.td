@@ -223,7 +223,7 @@ def mem : Operand<iPTR> {
 def memaddr : Operand<iPTR> {
   let PrintMethod = "printMemAddrOperand";
   let MIOperandInfo = (ops Int32Regs, simm16);
-  let EncoderMethod = "getMemAddrEncoding";
+  let EncoderMethod = "getMemEncoding";
 }
 
 // Transformation Function - get the lower 16 bits.

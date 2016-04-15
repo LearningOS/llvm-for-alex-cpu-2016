@@ -18,6 +18,11 @@ namespace object {
 
 StringRef getELFRelocationTypeName(uint32_t Machine, uint32_t Type) {
   switch (Machine) {
+  case ELF::EM_ALEX:
+    switch(Type) {
+#include "llvm/Support/ELFRelocs/Alex.def"
+      default: break;
+    }
   case ELF::EM_X86_64:
     switch (Type) {
 #include "llvm/Support/ELFRelocs/x86_64.def"

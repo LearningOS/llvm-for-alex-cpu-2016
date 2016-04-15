@@ -2,10 +2,11 @@
 #define LLVM_LIB_TARGET_ALEX_ALEXINSTRINFO_H
 
 #include "AlexRegisterInfo.h"
+#include "MCTargetDesc/AlexMCTargetDesc.h"
 #include "llvm/Target/TargetInstrInfo.h"
 
 #define GET_INSTRINFO_HEADER
-#define GET_INSTRINFO_ENUM
+//#define GET_INSTRINFO_ENUM
 #include "AlexGenInstrInfo.inc"
 
 namespace llvm {

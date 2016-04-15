@@ -310,6 +310,7 @@ enum {
   EM_NORC          = 218, // Nanoradio Optimized RISC
   EM_CSR_KALIMBA   = 219, // CSR Kalimba architecture family
   EM_AMDGPU        = 224, // AMD GPU architecture
+  EM_ALEX          = 257,
 
   // A request has been made to the maintainer of the official registry for
   // such numbers for an official value for WebAssembly. As soon as one is
@@ -379,6 +380,7 @@ enum {
 enum {
 #include "ELFRelocs/PowerPC.def"
 };
+
 
 // Specific e_flags for PPC64
 enum {
@@ -532,6 +534,11 @@ enum : unsigned {
 // ELF Relocation types for Mips
 enum {
 #include "ELFRelocs/Mips.def"
+};
+
+// ELF Relocation types for Mips
+enum {
+#include "ELFRelocs/Alex.def"
 };
 
 // Special values for the st_other field in the symbol table entry for MIPS.
