@@ -116,3 +116,5 @@ int test_switch(int a, int *ary) {
 int main() {
   return 0;
 }
+void _start() {
+}

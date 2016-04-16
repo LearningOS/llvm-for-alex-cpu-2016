@@ -31,11 +31,11 @@ namespace llvm {
 
     class AlexAsmBackend : public MCAsmBackend {
         Triple::OSType OSType;
-        bool IsLittle; // Big or little endian
+        //bool IsLittle; // Big or little endian
 
     public:
-        AlexAsmBackend(const Target &T, Triple::OSType _OSType, bool IsLittle)
-                : MCAsmBackend(), OSType(_OSType), IsLittle(IsLittle) {}
+        AlexAsmBackend(const Target &T, Triple::OSType _OSType)
+                : MCAsmBackend(), OSType(_OSType) {}
 
         MCObjectWriter *createObjectWriter(raw_pwrite_stream &OS) const override;
 

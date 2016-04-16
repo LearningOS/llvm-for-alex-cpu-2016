@@ -32,20 +32,18 @@
 
 #define GET_INSTRMAP_INFO
 #include "AlexGenInstrInfo.inc"
+#include "AlexMCExpr.h"
+#include "AlexFixupKinds.h"
+
 #undef GET_INSTRMAP_INFO
 
 namespace llvm {
     MCCodeEmitter *createAlexMCCodeEmitterEL(const MCInstrInfo &MCII,
                                              const MCRegisterInfo &MRI,
                                              MCContext &Context) {
-        return new AlexMCCodeEmitter(MCII, Context, false);
+        return new AlexMCCodeEmitter(MCII, Context);
     }
 
-//    MCCodeEmitter *llvm::createAlexMCCodeEmitterEL(const MCInstrInfo &MCII,
-//                                                   const MCRegisterInfo &MRI,
-//                                                   MCContext &Ctx) {
-//        return new AlexMCCodeEmitter(MCII, Ctx, true);
-//    }
 } // End of namespace llvm
 
 void AlexMCCodeEmitter::EmitByte(unsigned char C, raw_ostream &OS) const {
@@ -55,8 +53,8 @@ void AlexMCCodeEmitter::EmitByte(unsigned char C, raw_ostream &OS) const {
 void AlexMCCodeEmitter::EmitInstruction(uint64_t Val, unsigned Size, raw_ostream &OS) const {
     // Output the instruction encoding in little endian byte order.
     for (unsigned i = 0; i < Size; ++i) {
-        unsigned Shift = IsLittleEndian ? i * 8 : (Size - 1 - i) * 8;
-        EmitByte((Val >> Shift) & 0xff, OS);
+        unsigned Shift = i;
+        EmitByte((Val >> (Shift*8)) & 0xff, OS);
     }
 }
 
@@ -141,7 +139,7 @@ getExprOpValue(const MCExpr *Expr,SmallVectorImpl<MCFixup> &Fixups,
     }
 
     if (Kind == MCExpr::Target) {
-        /*const AlexMCExpr *AlexExpr = cast<AlexMCExpr>(Expr);
+        const AlexMCExpr *AlexExpr = cast<AlexMCExpr>(Expr);
 
         Alex::Fixups FixupKind = Alex::Fixups(0);
         switch (AlexExpr->getKind()) {
@@ -153,10 +151,74 @@ getExprOpValue(const MCExpr *Expr,SmallVectorImpl<MCFixup> &Fixups,
                 FixupKind = Alex::fixup_Alex_LO16;
                 break;
         }
-        Fixups.push_back(MCFixup::create(0, AlexExpr, MCFixupKind(FixupKind)));*/
+        Fixups.push_back(MCFixup::create(0, AlexExpr, MCFixupKind(FixupKind)));
         return 0;
     }
 
+    if (Kind == MCExpr::SymbolRef) {
+        Alex::Fixups FixupKind = Alex::Fixups(0);
+
+        //@switch {
+        auto a = cast<MCSymbolRefExpr>(Expr)->getKind();
+        switch(a) {
+        //    @switch }
+        //case MCSymbolRefExpr::VK_Alex_GPREL:
+        //    FixupKind = Alex::fixup_Alex_GPREL16;
+        //    break;
+//#if CH >= CH9_1 //2
+//        case MCSymbolRefExpr::VK_Alex_GOT_CALL:
+//            FixupKind = Alex::fixup_Alex_CALL16;
+//            break;
+//#endif
+//        case MCSymbolRefExpr::VK_Alex_GOT16:
+//            FixupKind = Alex::fixup_Alex_GOT_Global;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_GOT:
+//            FixupKind = Alex::fixup_Alex_GOT_Local;
+//            break;
+        case MCSymbolRefExpr::VK_Alex_ABS_HI:
+            FixupKind = Alex::fixup_Alex_HI16;
+            break;
+        case MCSymbolRefExpr::VK_Alex_ABS_LO:
+            FixupKind = Alex::fixup_Alex_LO16;
+            break;
+//#if CH >= CH12_1
+//        case MCSymbolRefExpr::VK_Alex_TLSGD:
+//            FixupKind = Alex::fixup_Alex_TLSGD;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_TLSLDM:
+//            FixupKind = Alex::fixup_Alex_TLSLDM;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_DTP_HI:
+//            FixupKind = Alex::fixup_Alex_DTP_HI;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_DTP_LO:
+//            FixupKind = Alex::fixup_Alex_DTP_LO;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_GOTTPREL:
+//            FixupKind = Alex::fixup_Alex_GOTTPREL;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_TP_HI:
+//            FixupKind = Alex::fixup_Alex_TP_HI;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_TP_LO:
+//            FixupKind = Alex::fixup_Alex_TP_LO;
+//            break;
+//#endif
+//        case MCSymbolRefExpr::VK_Alex_GOT_HI16:
+//            FixupKind = Alex::fixup_Alex_GOT_HI16;
+//            break;
+//        case MCSymbolRefExpr::VK_Alex_GOT_LO16:
+//            FixupKind = Alex::fixup_Alex_GOT_LO16;
+//            break;
+        default:
+            break;
+        } // switch
+
+        Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FixupKind)));
+        return 0;
+    }
+    
     // All of the information is in the fixup.
     return 0;
 }
@@ -194,11 +256,6 @@ AlexMCCodeEmitter::getMemEncoding(const MCInst &MI, unsigned OpNo,
     unsigned OffBits = getMachineOpValue(MI, MI.getOperand(OpNo+1), Fixups, STI);
 
     return (OffBits & 0xFFFF) | RegBits;
-}
-
-unsigned AlexMCCodeEmitter::getMemAddrEncoding(const MCInst &MI, unsigned OpNo, SmallVectorImpl<MCFixup> &Fixups,
-                                               const MCSubtargetInfo &STI) const {
-    return 0;
 }
 
 

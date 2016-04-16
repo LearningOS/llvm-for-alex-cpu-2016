@@ -1,5 +1,5 @@
 [common]
-subdirectories = MCTargetDesc InstPrinter ;AsmParser Disassembler  TargetInfo
+subdirectories = MCTargetDesc InstPrinter TargetInfo ;AsmParser Disassembler
 
 [component_0]
 type = TargetGroup
@@ -11,5 +11,6 @@ has_asmprinter = 1
 type = Library
 name = AlexCodeGen
 parent = Alex
-required_libraries = AsmPrinter CodeGen Core MC SelectionDAG Support Target AlexAsmPrinter
+required_libraries = AsmPrinter CodeGen Core MC SelectionDAG
+                     Support Target AlexDesc AlexAsmPrinter AlexInfo
 add_to_library_groups = Alex

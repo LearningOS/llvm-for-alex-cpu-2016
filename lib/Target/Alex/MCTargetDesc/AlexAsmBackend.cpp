@@ -46,7 +46,7 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
         case Alex::fixup_Alex_HI16:
         case Alex::fixup_Alex_GOT_Local:
             // Get the higher 16-bits. Also add 1 if bit 15 is 1.
-            Value = ((Value + 0x8000) >> 16) & 0xffff;
+            Value = (Value >> 16) & 0xffff;
             break;
     }
 
@@ -57,7 +57,7 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
 MCObjectWriter *
 AlexAsmBackend::createObjectWriter(raw_pwrite_stream &OS) const {
     return createAlexELFObjectWriter(OS,
-                                     MCELFObjectTargetWriter::getOSABI(OSType), IsLittle);
+                                     MCELFObjectTargetWriter::getOSABI(OSType));
 }
 
 /// ApplyFixup - Apply the \p Value for given \p Fixup into the provided
@@ -89,7 +89,7 @@ void AlexAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
     uint64_t CurVal = 0;
 
     for (unsigned i = 0; i != NumBytes; ++i) {
-        unsigned Idx = IsLittle ? i : (FullSize - 1 - i);
+        unsigned Idx = i;
         CurVal |= (uint64_t)((uint8_t)Data[Offset + Idx]) << (i*8);
     }
 
@@ -99,7 +99,7 @@ void AlexAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
 
     // Write out the fixed up bytes back to the code/data bits.
     for (unsigned i = 0; i != NumBytes; ++i) {
-        unsigned Idx = IsLittle ? i : (FullSize - 1 - i);
+        unsigned Idx = i;
         Data[Offset + Idx] = (uint8_t)((CurVal >> (i*8)) & 0xff);
     }
 }
@@ -112,6 +112,7 @@ getFixupKindInfo(MCFixupKind Kind) const {
             // AlexFixupKinds.h.
             //
             // name                        offset  bits  flags
+            { "fixup_Alex_Invalid",        0,     32,   0 },
             { "fixup_Alex_32",             0,     32,   0 },
             { "fixup_Alex_HI16",           0,     16,   0 },
             { "fixup_Alex_LO16",           0,     16,   0 },
@@ -143,5 +144,5 @@ bool AlexAsmBackend::writeNopData(uint64_t Count, MCObjectWriter *OW) const {
 MCAsmBackend *llvm::createAlexAsmBackendEL32(const Target &T,
                                              const MCRegisterInfo &MRI,
                                              const Triple &TT, StringRef CPU) {
-    return new AlexAsmBackend(T, TT.getOS(), /*IsLittle*/true);
+    return new AlexAsmBackend(T, TT.getOS());
 }

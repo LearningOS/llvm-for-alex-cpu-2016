@@ -2,5 +2,5 @@
 type = Library
 name = AlexAsmPrinter
 parent = Alex
-required_libraries = MC Support
+required_libraries = MC Support AlexInfo
 add_to_library_groups = Alex

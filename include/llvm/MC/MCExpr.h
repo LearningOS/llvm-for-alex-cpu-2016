@@ -276,6 +276,8 @@ public:
     VK_Mips_CALL_LO16,
     VK_Mips_PCREL_HI16,
     VK_Mips_PCREL_LO16,
+    VK_Alex_ABS_LO,
+    VK_Alex_ABS_HI,
 
     VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
 

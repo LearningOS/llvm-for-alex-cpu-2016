@@ -37,11 +37,11 @@ namespace llvm {
         void operator=(const AlexMCCodeEmitter &) = delete;
         const MCInstrInfo &MCII;
         MCContext &Ctx;
-        bool IsLittleEndian;
+        //bool IsLittleEndian;
 
     public:
-        AlexMCCodeEmitter(const MCInstrInfo &mcii, MCContext &Ctx_, bool IsLittle)
-                : MCII(mcii), Ctx(Ctx_), IsLittleEndian(IsLittle) {}
+        AlexMCCodeEmitter(const MCInstrInfo &mcii, MCContext &Ctx_)
+                : MCII(mcii), Ctx(Ctx_) {}
 
         ~AlexMCCodeEmitter() override {}
 
@@ -88,9 +88,6 @@ namespace llvm {
                                    const MCSubtargetInfo &STI) const;
 
         unsigned getMemEncoding(const MCInst &MI, unsigned OpNo,
-                                SmallVectorImpl<MCFixup> &Fixups,
-                                const MCSubtargetInfo &STI) const;
-        unsigned getMemAddrEncoding(const MCInst &MI, unsigned OpNo,
                                 SmallVectorImpl<MCFixup> &Fixups,
                                 const MCSubtargetInfo &STI) const;
 

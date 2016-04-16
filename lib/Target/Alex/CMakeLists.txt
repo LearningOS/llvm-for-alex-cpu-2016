@@ -22,9 +22,10 @@ add_llvm_target(AlexCodeGen
         AlexMachineFunction.cpp
         AlexRegisterInfo.cpp
         AlexTargetMachine.cpp
-#        AlexMCInstLower.cpp
+        AlexMCInstLower.cpp
         AlexTargetObjectFile.cpp
         )
 
 add_subdirectory(MCTargetDesc)
 add_subdirectory(InstPrinter)
+add_subdirectory(TargetInfo)

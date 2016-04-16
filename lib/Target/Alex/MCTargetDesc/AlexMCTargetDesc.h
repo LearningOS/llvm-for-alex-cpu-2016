@@ -31,8 +31,7 @@ namespace llvm {
                                            const Triple &TT, StringRef CPU);
 
     MCObjectWriter *createAlexELFObjectWriter(raw_pwrite_stream &OS,
-                                              uint8_t OSABI,
-                                              bool IsLittleEndian);
+                                              uint8_t OSABI);
 } // End llvm namespace
 
 // Defines symbolic names for Alex registers.  This defines a mapping from

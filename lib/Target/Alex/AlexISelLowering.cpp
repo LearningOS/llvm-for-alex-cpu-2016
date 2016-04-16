@@ -93,7 +93,7 @@ SDValue AlexTargetLowering::getGlobalReg(SelectionDAG &DAG, EVT Ty) const {
 SDValue AlexTargetLowering::getTargetNode(GlobalAddressSDNode *N, EVT Ty,
                                           SelectionDAG &DAG,
                                           unsigned Flag) const {
-    return DAG.getTargetGlobalAddress(N->getGlobal(), SDLoc(N), Ty, 0);
+    return DAG.getTargetGlobalAddress(N->getGlobal(), SDLoc(N), Ty, 0, Flag);
 }
 
 //@getTargetNode(ExternalSymbolSDNode
@@ -136,8 +136,9 @@ SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
         }
 
         //@ %hi/%lo relocation
-        return getAddrNonPIC(N, Ty, DAG);
+
     }*/
+    return getAddrNonPIC(N, Ty, DAG);
 
     //if (GV->hasInternalLinkage() || (GV->hasLocalLinkage() && !isa<Function>(GV)))
     //    return getAddrLocal(N, Ty, DAG);
@@ -147,8 +148,8 @@ SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
     //    return getAddrGlobalLargeGOT(N, Ty, DAG, AlexII::MO_GOT_HI16,
     //                                 AlexII::MO_GOT_LO16, DAG.getEntryNode(),
     //                                 MachinePointerInfo::getGOT());
-    MachineFunction &MF = DAG.getMachineFunction();
-    return getAddrGlobal(N, Ty, DAG, 0, DAG.getEntryNode(), MachinePointerInfo::getGOT(MF));
+    //MachineFunction &MF = DAG.getMachineFunction();
+    //return getAddrGlobal(N, Ty, DAG, 0, DAG.getEntryNode(), MachinePointerInfo::getGOT(MF));
 }
 
 static unsigned

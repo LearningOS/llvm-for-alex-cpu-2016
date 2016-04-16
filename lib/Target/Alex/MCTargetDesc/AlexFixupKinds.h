@@ -26,7 +26,8 @@ namespace llvm {
         //@Fixups {
         enum Fixups {
             //@ Pure upper 32 bit fixup resulting in - R_ALEX_32.
-                    fixup_Alex_32 = FirstTargetFixupKind,
+                    fixup_Alex_Invalid = FirstTargetFixupKind,
+                    fixup_Alex_32,
 
             // Pure upper 16 bit fixup resulting in - R_ALEX_HI16.
                     fixup_Alex_HI16,

@@ -21,6 +21,7 @@ const char *Triple::getArchTypeName(ArchType Kind) {
   switch (Kind) {
   case UnknownArch: return "unknown";
 
+  case alex:        return "alex";
   case aarch64:     return "aarch64";
   case aarch64_be:  return "aarch64_be";
   case arm:         return "arm";
@@ -73,6 +74,8 @@ const char *Triple::getArchTypePrefix(ArchType Kind) {
   switch (Kind) {
   default:
     return nullptr;
+  case alex:
+    return "alex32";
 
   case aarch64:
   case aarch64_be:  return "aarch64";
@@ -233,6 +236,7 @@ static Triple::ArchType parseBPFArch(StringRef ArchName) {
 Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
   Triple::ArchType BPFArch(parseBPFArch(Name));
   return StringSwitch<Triple::ArchType>(Name)
+    .Case("alex", alex)
     .Case("aarch64", aarch64)
     .Case("aarch64_be", aarch64_be)
     .Case("arm64", aarch64) // "arm64" is an alias for "aarch64"
@@ -340,6 +344,7 @@ static Triple::ArchType parseARMArch(StringRef ArchName) {
 
 static Triple::ArchType parseArch(StringRef ArchName) {
   auto AT = StringSwitch<Triple::ArchType>(ArchName)
+    .Case("alex32", Triple::alex)
     .Cases("i386", "i486", "i586", "i686", Triple::x86)
     // FIXME: Do we need to support these?
     .Cases("i786", "i886", "i986", Triple::x86)
@@ -600,6 +605,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::wasm32:
   case Triple::wasm64:
   case Triple::xcore:
+  case Triple::alex:
     return Triple::ELF;
 
   case Triple::ppc:
@@ -1129,6 +1135,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::lanai:
   case llvm::Triple::shave:
   case llvm::Triple::wasm32:
+  case llvm::Triple::alex:
     return 32;
 
   case llvm::Triple::aarch64:
@@ -1203,6 +1210,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::lanai:
   case Triple::shave:
   case Triple::wasm32:
+  case Triple::alex:
     // Already 32-bit.
     break;
 
@@ -1237,6 +1245,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::xcore:
   case Triple::sparcel:
   case Triple::shave:
+  case Triple::alex:
     T.setArch(UnknownArch);
     break;
 
@@ -1306,6 +1315,7 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::x86:
   case Triple::x86_64:
   case Triple::xcore:
+  case Triple::alex:
 
   // ARM is intentionally unsupported here, changing the architecture would
   // drop any arch suffixes.
@@ -1387,6 +1397,7 @@ Triple Triple::getLittleEndianArchVariant() const {
   case Triple::x86:
   case Triple::x86_64:
   case Triple::xcore:
+  case Triple::alex:
     // Already little endian.
     break;
 

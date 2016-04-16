@@ -5,8 +5,10 @@
 #include "llvm/CodeGen/SelectionDAG.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Target/TargetLowering.h"
+#include "llvm/MC/MCExpr.h"
 #include "AlexTargetMachine.h"
 #include <deque>
+#include <MCTargetDesc/AlexBaseInfo.h>
 
 namespace llvm {
     namespace AlexISD {
@@ -204,8 +206,8 @@ namespace llvm {
         template<class NodeTy>
         SDValue getAddrNonPIC(NodeTy *N, EVT Ty, SelectionDAG &DAG) const {
             SDLoc DL(N);
-            SDValue Lo = getTargetNode(N, Ty, DAG, 0);
-            SDValue Hi = getTargetNode(N, Ty, DAG, 1);
+            SDValue Lo = getTargetNode(N, Ty, DAG, AlexII::MO_ABS_LO);
+            SDValue Hi = getTargetNode(N, Ty, DAG, AlexII::MO_ABS_HI);
             return DAG.getNode(ISD::ADD, DL, Ty,
                                DAG.getNode(AlexISD::Hi, DL, Ty, Hi),
                                DAG.getNode(AlexISD::Lo, DL, Ty, Lo));

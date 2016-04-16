@@ -5,4 +5,6 @@ add_llvm_library(LLVMAlexDesc
         AlexMCCodeEmitter.cpp
         AlexAsmBackend.cpp
         AlexTargetStreamer.cpp
+        AlexMCExpr.cpp
+        ../AlexMCInstLower.cpp
         )

@@ -1,6 +1,7 @@
 #ifndef LLVM_LIB_TARGET_ALEX_ALEXASMPRINTER_H
 #define LLVM_LIB_TARGET_ALEX_ALEXASMPRINTER_H
 
+#include "AlexMCInstLower.h"
 #include "AlexTargetMachine.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/MC/MCStreamer.h"
@@ -24,26 +25,6 @@ namespace llvm {
     class MachineInstr;
     class MachineFunction;
     class AlexAsmPrinter;
-
-//@1 {
-/// This class is used to lower an MachineInstr into an MCInst.
-    class LLVM_LIBRARY_VISIBILITY AlexMCInstLower {
-//@2
-        typedef MachineOperand::MachineOperandType MachineOperandType;
-        MCContext *Ctx;
-        AlexAsmPrinter &AsmPrinter;
-    public:
-        AlexMCInstLower(AlexAsmPrinter &asmprinter);
-        void Initialize(MCContext* C) {
-            Ctx = C;
-        }
-        void Lower(const MachineInstr *MI, MCInst &OutMI) const;
-        MCOperand LowerOperand(const MachineOperand& MO, unsigned offset = 0) const;
-        MCOperand LowerSymbolOperand(const MachineOperand &MO,
-                                     MachineOperandType MOTy,
-                                     unsigned Offset) const;
-
-    };
 
     class LLVM_LIBRARY_VISIBILITY AlexAsmPrinter : public AsmPrinter {
         AlexMCInstLower MCInstLowering;

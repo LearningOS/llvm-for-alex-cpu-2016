@@ -17,6 +17,7 @@
 #include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCValue.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "AlexFixupKinds.h"
 #include <list>
 
 using namespace llvm;
@@ -46,9 +47,8 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
                                            const MCFixup &Fixup,
                                            bool IsPCRel) const {
     // determine the type of the relocation
-    unsigned Type = (unsigned)ELF::R_ALEX_32;
+    unsigned Type = (unsigned)ELF::R_ALEX_NONE;
     unsigned Kind = (unsigned)Fixup.getKind();
-    return Type;
 
     switch (Kind) {
         default:
@@ -56,7 +56,7 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
         case FK_Data_4:
             Type = ELF::R_ALEX_32;
             break;
-        /*case Alex::fixup_Alex_32:
+        case Alex::fixup_Alex_32:
             Type = ELF::R_ALEX_32;
             break;
         case Alex::fixup_Alex_GPREL16:
@@ -77,7 +77,7 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
             break;
         case Alex::fixup_Alex_GOT_LO16:
             Type = ELF::R_ALEX_GOT_LO16;
-            break;*/
+            break;
     }
 
     return Type;
@@ -90,7 +90,7 @@ AlexELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
     // FIXME: This is extremelly conservative. This really needs to use a
     // whitelist with a clear explanation for why each realocation needs to
     // point to the symbol, not to the section.
-   /* switch (Type) {
+    switch (Type) {
         default:
             return true;
 
@@ -113,13 +113,12 @@ AlexELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
 
         case ELF::R_ALEX_GPREL16:
             return false;
-    }*/
+    }
     return true;
 }
 
 MCObjectWriter *llvm::createAlexELFObjectWriter(raw_pwrite_stream &OS,
-                                                uint8_t OSABI,
-                                                bool IsLittleEndian) {
+                                                uint8_t OSABI) {
     MCELFObjectTargetWriter *MOTW = new AlexELFObjectWriter(OSABI);
-    return createELFObjectWriter(MOTW, OS, IsLittleEndian);
+    return createELFObjectWriter(MOTW, OS, true);
 }

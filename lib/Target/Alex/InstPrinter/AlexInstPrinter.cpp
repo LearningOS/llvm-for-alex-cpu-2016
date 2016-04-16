@@ -60,8 +60,10 @@ static void printExpr(const MCExpr *Expr, const MCAsmInfo *MAI,
     MCSymbolRefExpr::VariantKind Kind = SRE->getKind();
 
     switch (Kind) {
-        default:                                 llvm_unreachable("Invalid kind!");
-        case MCSymbolRefExpr::VK_None:           break;
+    default:                                 llvm_unreachable("Invalid kind!");
+    case MCSymbolRefExpr::VK_None:           break;
+    case MCSymbolRefExpr::VK_Alex_ABS_HI:   OS << "%hi("; break;
+    case MCSymbolRefExpr::VK_Alex_ABS_LO:   OS << "%lo("; break;
     }
 
     SRE->getSymbol().print(OS, MAI);
@@ -71,12 +73,8 @@ static void printExpr(const MCExpr *Expr, const MCAsmInfo *MAI,
             OS << '+';
         OS << Offset;
     }
-
-//    if ((Kind == MCSymbolRefExpr::VK_Alex_GPOFF_HI) ||
-//        (Kind == MCSymbolRefExpr::VK_Alex_GPOFF_LO))
-//        OS << ")))";
-//    else if (Kind != MCSymbolRefExpr::VK_None)
-//        OS << ')';
+    else if (Kind != MCSymbolRefExpr::VK_None)
+        OS << ')';
 }
 
 void AlexInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,

@@ -59,9 +59,18 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
             break;
         case Alex::LI32: {
             auto reg = MI->getOperand(0).getReg();
-            auto val = MI->getOperand(1).getImm();
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), reg).addImm(val & 0xFFFF);
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIH), reg).addImm((val >> 16) & 0xFFFF);
+            auto immOprand = MI->getOperand(1);
+            if (immOprand.isImm()) {
+                auto val = immOprand.getImm();
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), reg).addImm(val & 0xFFFF);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIH), reg).addImm((val >> 16) & 0xFFFF);
+            }
+            else {
+                auto globalAddr = immOprand.getGlobal();
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), reg).addImm(0);
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIH), reg).addImm(0);
+            }
+
             break;
         }
 
@@ -83,7 +92,7 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 
             // call func
             if (MI->getDesc().getOpcode() == Alex::CALLg) {
-                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addGlobalAddress(MI->getOperand(0).getGlobal());
+                //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addGlobalAddress(MI->getOperand(0).getGlobal());
             }
             else if (MI->getDesc().getOpcode() == Alex::CALLi) {
                 auto imm = MI->getOperand(0).getImm();

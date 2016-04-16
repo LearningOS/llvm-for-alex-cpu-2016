@@ -7,7 +7,7 @@ void AlexMCAsmInfo::anchor() { }
 
 AlexMCAsmInfo::AlexMCAsmInfo(const Triple &TheTriple) {
     if ((TheTriple.getArch() == Triple::alex))
-        IsLittleEndian = false; // the default of IsLittleEndian is true
+        IsLittleEndian = true; // the default of IsLittleEndian is true
 
     AlignmentIsInBytes          = false;
     Data16bitsDirective         = "\t.2byte\t";

@@ -12,20 +12,16 @@
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 
 using namespace llvm;
-Target llvm::TheAlexTarget;
-extern "C" void LLVMInitializeAlexTarget() {
-    RegisterTargetMachine<AlexTargetMachine> x(TheAlexTarget);
-}
-extern "C" void LLVMInitializeAlexTargetInfo() {
-    // Register the target.
-    RegisterTarget<Triple::alex, /*has JIT?*/ false> X(TheAlexTarget, "alex", "Alex");
-}
+
 #define DEBUG_TYPE "Alex-subtarget"
 
 #define GET_SUBTARGETINFO_TARGET_DESC
 #define GET_SUBTARGETINFO_CTOR
 #include "AlexGenSubtargetInfo.inc"
 
+extern "C" void LLVMInitializeAlexTarget() {
+  RegisterTargetMachine<AlexTargetMachine> x(TheAlexTarget);
+}
 AlexSubtarget::AlexSubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
                     const AlexTargetMachine *_TM) :
               AlexGenSubtargetInfo(TT, CPU, FS),
