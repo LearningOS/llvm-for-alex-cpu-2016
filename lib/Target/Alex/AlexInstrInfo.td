@@ -172,8 +172,6 @@ def AlexPop  : SDNode<"AlexISD::Pop", SDT_AlexPop,
 // Return
 def AlexRet : SDNode<"AlexISD::Ret", SDTNone,
                      [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
-//def AlexHi    : SDNode<"AlexISD::Hi", SDTIntUnaryOp>;
-//def AlexLo    : SDNode<"AlexISD::Lo", SDTIntUnaryOp>;
 def AlexLI32  : SDNode<"AlexISD::LI32", SDT_AlexLI32>;
 //===----------------------------------------------------------------------===//
 // Alex Instruction Predicate Definitions.
@@ -227,7 +225,6 @@ def memaddr : Operand<iPTR> {
 
 def AlexHi    : SDNode<"AlexISD::Hi", SDTIntUnaryOp>;
 def AlexLo    : SDNode<"AlexISD::Lo", SDTIntUnaryOp>;
-
 
 // Transformation Function - get the lower 16 bits.
 def LO16 : SDNodeXForm<imm, [{
@@ -291,7 +288,9 @@ class AlignedLea<PatFrag Node> :
 // Load/Store PatFrags.
 def load_a          : AlignedLoad<load>;
 def store_a         : AlignedStore<store>;
-
+def zextloadi16_a   : AlignedLoad<zextloadi16>;
+def extloadi16_a    : AlignedLoad<extloadi16>;
+def truncstorei16_a : AlignedStore<truncstorei16>;
 //===----------------------------------------------------------------------===//
 // Instructions specific format
 //===----------------------------------------------------------------------===//
@@ -407,6 +406,7 @@ def DIViu   : ArithLogicRRI<0x0c, "diviu", udiv, uimm16, immZExt16, Int32Regs>;
 def ORi     : ArithLogicRRI<0xfe, "ori",   or,   uimm16, immZExt16, Int32Regs>;
 
 def ADD     : ArithLogicRRR<0x01, "add",  add,  Int32Regs>;
+
 //def ADDu    : ArithLogicRRR<0b0000011, "addu", add,  Int32Regs>;
 def SUB     : ArithLogicRRR<0x04, "sub",  sub,  Int32Regs>;
 def MUL     : ArithLogicRRR<0x07, "mul",  mul,  Int32Regs>;
@@ -431,11 +431,22 @@ def LTU     : CompareRRR<0x1d, "ltu",setult,Int32Regs>;
 def GT      : CompareRRR<0x1e, "gt", setgt, Int32Regs>;
 def GTU     : CompareRRR<0x1f, "gtu",setugt,Int32Regs>;
 def LE      : CompareRRR<0x20, "le", setle, Int32Regs>;
+def LEU     : CompareRRR<0x21, "leu",setule, Int32Regs>;
 def GE      : CompareRRR<0x22, "ge", setge, Int32Regs>;
+def GEU      : CompareRRR<0x22,"geu",setuge, Int32Regs>;
 
 /* 数据传输 */
 defm LW     : LoadM32<0x2d,  "lw",  load_a>;
+defm LB     : LoadM32<0x2f,  "lb",  sextloadi8>;
+defm LH     : LoadM32<0x2e,  "lh",  extloadi16_a>;
+// lhu 没有
+defm LHu    : LoadM32<0xff,  "lhu", zextloadi16_a>;
+// LBu没有
+defm LBu    : LoadM32<0xfd,  "lbu", zextloadi8>;
 defm SW     : StoreM32<0x34, "sw",  store_a>;
+defm SB     : StoreM32<0x36, "sb",  truncstorei8>;
+defm SH     : StoreM32<0x08, "sh",  truncstorei16_a>;
+
 // use addi
 defm LEAW   : LeaM32<0x02, "addi">;
 
@@ -463,18 +474,18 @@ def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
 
 /* Global Address/Jump table */
 
-/*def : Pat<(AlexHi tjumptable:$in), (LIH tjumptable:$in)>;
+def : Pat<(AlexHi tjumptable:$in), (LIH tjumptable:$in)>;
 def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
 def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
               (ORi Int32Regs:$hi, tjumptable:$lo)>;
-*/
+
 def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntUnaryOp>;
-class WrapperPat<SDNode node, RegisterClass RC>:
+class WrapperPat<SDNode node>:
       Pat<(AlexWrapper node:$in),
               (LI32 node:$in)>;
 
-def : WrapperPat<tglobaladdr, Int32Regs>;
-//def : WrapperPat<tjumptable,  ORi, Int32Regs>;
+def : WrapperPat<tglobaladdr>;
+def : WrapperPat<tjumptable>;
 
 /* 分支语句 */
 //def JR      : JumpFR<0b1011111, "jr", Int32Regs>;
@@ -500,45 +511,36 @@ def brtarget16    : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranch16Target";
 }
+let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
 
 def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
           "bnz\t$ra, $imm16",
-          [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let isBarrier = 1;
-  let hasDelaySlot = 1;
-}
+          [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
 /* BNEZ 这里指令有冲突, ra rb可能为0 和bne分不开*/
 def BNEZ : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "bne\t$ra, $rb, $imm16",
-         [(brcond (i32 (setne Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let isBarrier = 1;
-  let hasDelaySlot = 1;
-}
-
+         [(brcond (i32 (setne Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
 def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "blt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setlt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let isBarrier = 1;
-  let hasDelaySlot = 1;
-}
-
+         [(brcond (i32 (setlt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
 def BGT : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "bgt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setgt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let isBarrier = 1;
-  let hasDelaySlot = 1;
+         [(brcond (i32 (setgt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+def BLE : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
+        "bgt\t$ra, $rb, $imm16",
+         [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+def BGE : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
+        "bgt\t$ra, $rb, $imm16",
+         [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+def BEQ : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
+        "bgt\t$ra, $rb, $imm16",
+         [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+def BNE : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
+        "bgt\t$ra, $rb, $imm16",
+         [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+
 }
 
-
-/* 函数调用 */
 def jmptarget  : Operand<OtherVT> {
   let EncoderMethod = "getBranch16TargetOpValue";
   let OperandType = "OPERAND_PCREL";
@@ -561,33 +563,20 @@ def AlexCallLink : SDNode<"AlexISD::JmpLink",SDT_AlexCallLink,
                           SDNPVariadic]>;
 
 let isCall=1, hasDelaySlot=1 in {
-  class CallLink<bits<8> op, string instr_asm>:
-    InstrI<op, (outs), (ins calltarget:$imm16, variable_ops),
-       !strconcat(instr_asm, "\t$imm16"), [/*(AlexCallLink imm:$imm16)*/],
-       NoItinerary>;
-
   class CallLinkReg<bits<8> op, string instr_asm,
                     RegisterClass RC>:
     InstrR<op, (outs), (ins RC:$ra, variable_ops),
        !strconcat(instr_asm, "\t$ra"), [/*(AlexCallLink RC:$ra)*/], NoItinerary>;
 }
 
-def CALL    : CallLink<0x2b, "call">;
+def CALL    : CallLinkReg<0x2b, "call", Int32Regs>;
 
-//def : Pat<(AlexCallLink (i32 tglobaladdr:$dst)),
-//          (J tglobaladdr:$dst)>;
-//def : Pat<(AlexCallLink (i32 texternalsym:$dst)),
-//          (J texternalsym:$dst)>;
-
-let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in {
     def CALLg : AlexPseudo<0, (outs), (ins calltarget:$imm16), "",
-     [(AlexCallLink (i32 tglobaladdr:$imm16))]>;
-let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
-    def CALLi : AlexPseudo<0, (outs), (ins calltarget:$imm16), "",
-     [(AlexCallLink (i32 imm:$imm16))]>;
-let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+                [(AlexCallLink (i32 tglobaladdr:$imm16))]>;
     def CALLr : AlexPseudo<0, (outs), (ins Int32Regs:$ra), "",
-     [(AlexCallLink Int32Regs:$ra)]>;
+                [(AlexCallLink Int32Regs:$ra)]>;
+}
 
 def SDT_AlexCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>]>;
 def SDT_AlexCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>, SDTCisVT<1, i32>]>;
@@ -617,7 +606,28 @@ def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
 def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
           (ORi Int32Regs:$hi, tglobaladdr:$lo)>;
 
-//def : Pat<(frameindex),
-//          (LI 0)>;
-//def addr :
-//  ComplexPattern<iPTR, 2, "SelectAddr", [frameindex], [SDNPWantParent]>;
+def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BLT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BGT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETLE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BLE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BGE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETEQ, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BEQ Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETNE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BNE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+/* 无符号指令 */
+def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BGT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETULT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BLT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+
+def : Pattern<(select Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc),
+           [(ADD Int32Regs:$ra, (ADD Int32Regs:$rb, Int32Regs:$rc))]<dag>>;
+
+def : Pat<(adde Int32Regs:$ra, immSExt16:$imm),
+          (ADDi Int32Regs:$ra, simm16:$imm)>;
+def : Pat<(addc Int32Regs:$ra, immSExt16:$imm),
+          (ADDi Int32Regs:$ra, simm16:$imm)>;

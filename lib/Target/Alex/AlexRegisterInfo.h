@@ -19,6 +19,13 @@ namespace llvm {
         const uint32_t *getCallPreservedMask(const MachineFunction &MF, CallingConv::ID CC) const override;
         BitVector getReservedRegs(const MachineFunction &MF) const override;
 
+      const uint32_t *getNoPreservedMask() const override {
+        static const uint32_t NoPreservedRegs[] = {
+                Alex::T1, Alex::T2, Alex::S1, Alex::S2
+        };
+        return NoPreservedRegs;
+      }
+
         const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF, unsigned Kind) const override;
 
         void eliminateFrameIndex(MachineBasicBlock::iterator II,

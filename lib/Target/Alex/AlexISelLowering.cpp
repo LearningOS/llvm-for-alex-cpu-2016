@@ -29,6 +29,15 @@ static const MCPhysReg O32IntRegs[] = {
         Alex::T1, Alex::T2
 };
 
+static unsigned
+addLiveIn(MachineFunction &MF, unsigned PReg, const TargetRegisterClass *RC)
+{
+    unsigned VReg = MF.getRegInfo().createVirtualRegister(RC);
+    MF.getRegInfo().addLiveIn(PReg, VReg);
+    return VReg;
+}
+
+
 const char *AlexTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch (Opcode) {
         case AlexISD::JmpLink:           return "AlexISD::JmpLink";
@@ -53,11 +62,19 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
                                        const AlexRegisterInfo* registerInfo)
         : TargetLowering(*targetMachine), subtarget(subtarget) {
     // disable dag nodes here
-    setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
-    setOperationAction(ISD::VASTART,           MVT::Other, Expand);
+
+    setOperationAction(ISD::SELECT_CC,         MVT::i32,   Expand);
+    setOperationAction(ISD::SELECT_CC,         MVT::Other, Expand);
+    //setOperationAction(ISD::BR_CC,             MVT::Other, Expand);
+    //setOperationAction(ISD::BR_CC,             MVT::iAny, Expand);
+
+    //setOperationAction(ISD::SELECT,            MVT::i32,   Expand);
+    setOperationAction(ISD::VASTART,           MVT::Other, Custom);
     setOperationAction(ISD::GlobalAddress,     MVT::i32,   Custom);
     setOperationAction(ISD::BlockAddress,      MVT::i32,   Custom);
     setOperationAction(ISD::JumpTable,         MVT::i32,   Custom);
+    setOperationAction(ISD::JumpTable,         MVT::Other, Custom);
+
     // Support va_arg(): variable numbers (not fixed numbers) of arguments
     //  (parameters) for function all
     setOperationAction(ISD::VAARG,             MVT::Other, Expand);
@@ -76,13 +93,85 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
 {
     switch (Op.getOpcode())
     {
+    case ISD::VASTART:            return lowerVASTART(Op, DAG);
       //  case ISD::BRCOND:             return lowerBRCOND(Op, DAG);
-        case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
-        case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
-        case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
-       // case ISD::SELECT:             return lowerSELECT(Op, DAG);
+    case ISD::SELECT:             return lowerSELECT(Op, DAG);
+    case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
+    case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
+    case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
     }
     return SDValue();
+}
+
+SDValue AlexTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const  {
+    MachineFunction &MF = DAG.getMachineFunction();
+    AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
+
+    SDLoc DL = SDLoc(Op);
+    SDValue FI = DAG.getFrameIndex(FuncInfo->getVarArgsFrameIndex(),
+                                   getPointerTy(MF.getDataLayout()));
+
+    return DAG.getConstant(0x1234, DL, MVT::i16);
+    //return DAG.getStore(Op.getOperand(0), DL, FI,
+    //             Op.getOperand(1), nullptr, false, false, 0);
+}
+
+SDValue AlexTargetLowering::lowerVASTART(SDValue Op, SelectionDAG &DAG) const {
+    MachineFunction &MF = DAG.getMachineFunction();
+    AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
+
+    SDLoc DL = SDLoc(Op);
+    SDValue FI = DAG.getFrameIndex(FuncInfo->getVarArgsFrameIndex(),
+                                   getPointerTy(MF.getDataLayout()));
+
+    // vastart just stores the address of the VarArgsFrameIndex slot into the
+    // memory location argument.
+    const Value *SV = cast<SrcValueSDNode>(Op.getOperand(2))->getValue();
+    return DAG.getStore(Op.getOperand(0), DL, FI, Op.getOperand(1),
+                        MachinePointerInfo(SV), false, false, 0);
+}
+void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
+                                         const AlexCC &CC, SDValue Chain,
+                                         SDLoc DL, SelectionDAG &DAG) const {
+    unsigned NumRegs = CC.numIntArgRegs();
+    const ArrayRef<MCPhysReg> ArgRegs = CC.intArgRegs();
+    const CCState &CCInfo = CC.getCCInfo();
+    unsigned Idx = CCInfo.getFirstUnallocated(ArgRegs);
+    unsigned RegSize = CC.regSize();
+    MVT RegTy = MVT::getIntegerVT(RegSize * 8);
+    const TargetRegisterClass *RC = getRegClassFor(RegTy);
+    MachineFunction &MF = DAG.getMachineFunction();
+    MachineFrameInfo *MFI = MF.getFrameInfo();
+    AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
+
+    // Offset of the first variable argument from stack pointer.
+    int VaArgOffset;
+
+    if (NumRegs == Idx)
+        VaArgOffset = CCInfo.getNextStackOffset(); //RoundUpToAlignment(CCInfo.getNextStackOffset(), RegSize);
+    else
+        VaArgOffset = (int)CC.reservedArgArea() - (int)(RegSize * (NumRegs - Idx));
+
+    // Record the frame index of the first variable argument
+    // which is a value necessary to VASTART.
+    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+    AlexFI->setVarArgsFrameIndex(FI);
+
+    // Copy the integer registers that have not been used for argument passing
+    // to the argument register save area. For O32, the save area is allocated
+    // in the caller's stack frame, while for N32/64, it is allocated in the
+    // callee's stack frame.
+    for (unsigned I = Idx; I < NumRegs; ++I, VaArgOffset += RegSize) {
+        unsigned Reg = addLiveIn(MF, ArgRegs[I], RC);
+        SDValue ArgValue = DAG.getCopyFromReg(Chain, DL, Reg, RegTy);
+        FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+        SDValue PtrOff = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+        SDValue Store = DAG.getStore(Chain, DL, ArgValue, PtrOff,
+                                     MachinePointerInfo(), false, false, 0);
+        cast<StoreSDNode>(Store.getNode())->getMemOperand()->setValue(
+                (Value *)nullptr);
+        OutChains.push_back(Store);
+    }
 }
 
 SDValue AlexTargetLowering::getGlobalReg(SelectionDAG &DAG, EVT Ty) const {
@@ -122,7 +211,7 @@ SDValue AlexTargetLowering::getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
                       const MachinePointerInfo &PtrInfo) const {
     SDLoc DL(N);
     return DAG.getNode(AlexISD::Wrapper, DL, Ty,
-                              getTargetNode(N, Ty, DAG, Flag));
+                              getTargetNode(N, Ty, DAG, Flag), Chain /*??*/);
     //return DAG.getLoad(Ty, DL, Chain, Tgt, PtrInfo, false, false, false, 0);
 }
 SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
@@ -139,13 +228,6 @@ SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
     return getAddrNonPIC(N, Ty, DAG);
 }
 
-static unsigned
-addLiveIn(MachineFunction &MF, unsigned PReg, const TargetRegisterClass *RC)
-{
-    unsigned VReg = MF.getRegInfo().createVirtualRegister(RC);
-    MF.getRegInfo().addLiveIn(PReg, VReg);
-    return VReg;
-}
 
 SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID CallConv, bool IsVarArg,
                                                  const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl, SelectionDAG &dag,
@@ -216,7 +298,7 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
     }
 
     for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
-        // The cpu0 ABIs for returning structs by value requires that we copy
+        // The Alex ABIs for returning structs by value requires that we copy
         // the sret argument into $v0 for the return. Save the argument into
         // a virtual register so that we can access it from the return points.
         if (Ins[i].Flags.isSRet()) {
@@ -231,6 +313,9 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
             break;
         }
     }
+
+    if (IsVarArg)
+        writeVarArgRegs(OutChains, AlexCCInfo, chain, dl, dag);
 
     // All stores are grouped in one node to allow the matching between
     // the size of Ins and InVals. This only happens when on varg functions
@@ -411,7 +496,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     MachineFrameInfo *MFI = MF.getFrameInfo();
     const TargetFrameLowering *TFL = MF.getSubtarget().getFrameLowering();
     AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
-    bool IsPIC = getTargetMachine().getRelocationModel() == Reloc::PIC_;
+    bool IsPIC = false;//getTargetMachine().getRelocationModel() == Reloc::PIC_;
     AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
 
     // Analyze operands of the call, assigning locations to each operand.
@@ -514,39 +599,28 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     // If the callee is a GlobalAddress/ExternalSymbol node (quite common, every
     // direct call is) turn it into a TargetGlobalAddress/TargetExternalSymbol
     // node so that legalize doesn't hack it.
-    bool IsPICCall = IsPIC; // true if calls are translated to
+    bool IsPICCall = false;//IsPIC; // true if calls are translated to
     // jalr $t9
     bool GlobalOrExternal = false, InternalLinkage = false;
     SDValue CalleeLo;
     EVT Ty = Callee.getValueType();
 
     if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
-        if (IsPICCall) {
-            const GlobalValue *Val = G->getGlobal();
-            InternalLinkage = Val->hasInternalLinkage();
+        //getAddrNonPIC()
 
-            //if (InternalLinkage)
-            //    Callee = getAddrLocal(G, Ty, DAG);
-            //else
-                Callee = getAddrGlobal(G, Ty, DAG, 0, Chain,
-                                       FuncInfo->callPtrInfo(Val));
-        } else
-            Callee = DAG.getTargetGlobalAddress(G->getGlobal(), DL,
-                                                getPointerTy(DAG.getDataLayout()), 0,
-                                                0);
+        Callee = getAddrNonPIC(G, Ty, DAG);/*DAG.getTargetGlobalAddress(G->getGlobal(),
+                                            DL,
+                                            getPointerTy(DAG.getDataLayout()),
+                                            0,
+                                            AlexII::MO_NO_FLAG);*/
+
         GlobalOrExternal = true;
     }
     else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(Callee)) {
         const char *Sym = S->getSymbol();
-
-        if (!IsPIC) // static
-            Callee = DAG.getTargetExternalSymbol(Sym,
+        Callee = DAG.getTargetExternalSymbol(Sym,
                                                  getPointerTy(DAG.getDataLayout()),
                                                  0);
-        else // PIC
-            Callee = getAddrGlobal(S, Ty, DAG, 0, Chain,
-                                   FuncInfo->callPtrInfo(Sym));
-
         GlobalOrExternal = true;
     }
 

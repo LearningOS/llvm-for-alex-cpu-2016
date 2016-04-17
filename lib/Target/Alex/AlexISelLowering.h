@@ -162,46 +162,40 @@ namespace llvm {
             SmallVector<ByValArgInfo, 2> ByValArgs;
         };
     private:
-
-//        // Create a TargetConstantPool node.
-//        SDValue getTargetNode(ConstantPoolSDNode *N, EVT Ty, SelectionDAG &DAG,
-//                              unsigned Flag) const;
-
-        //- must be exist even without function all
-        SDValue LowerFormalArguments(SDValue Chain,
+      SDValue LowerFormalArguments(SDValue Chain,
                                      CallingConv::ID CallConv, bool IsVarArg,
                                      const SmallVectorImpl<ISD::InputArg> &Ins,
                                      SDLoc dl, SelectionDAG &DAG,
                                      SmallVectorImpl<SDValue> &InVals) const override;
 
-        SDValue LowerReturn(SDValue chain,
+      SDValue LowerReturn(SDValue chain,
                             CallingConv::ID CallConv, bool isVarArg,
                             const SmallVectorImpl<ISD::OutputArg> &outs,
                             const SmallVectorImpl<SDValue> &outVals,
                             SDLoc dl, SelectionDAG &dag) const override;
-        SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
+      SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
                           SmallVectorImpl<SDValue> &InVals) const override;
-        void copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDValue> &OutChains,
+      void copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDValue> &OutChains,
                                                SelectionDAG &DAG, const ISD::ArgFlagsTy &Flags,
                                                SmallVectorImpl<SDValue> &InVals, const Argument *FuncArg,
                                                const AlexCC &CC, const ByValArgInfo &ByVal) const;
-        SDValue LowerCallResult(SDValue Chain, SDValue InFlag,
+      SDValue LowerCallResult(SDValue Chain, SDValue InFlag,
                                                     CallingConv::ID CallConv, bool IsVarArg,
                                                     const SmallVectorImpl<ISD::InputArg> &Ins,
                                                     SDLoc DL, SelectionDAG &DAG,
                                                     SmallVectorImpl<SDValue> &InVals,
                                                     const SDNode *CallNode,
                                                     const Type *RetTy) const;
-        void getOpndList(SmallVectorImpl<SDValue> &Ops,
+      void getOpndList(SmallVectorImpl<SDValue> &Ops,
                             std::deque< std::pair<unsigned, SDValue> > &RegsToPass,
                             bool IsPICCall, bool GlobalOrExternal, bool InternalLinkage,
                             CallLoweringInfo &CLI, SDValue Callee, SDValue Chain) const;
-        SDValue passArgOnStack(SDValue StackPtr, unsigned Offset,
+      SDValue passArgOnStack(SDValue StackPtr, unsigned Offset,
                                                    SDValue Chain, SDValue Arg, SDLoc DL,
                                                    bool IsTailCall, SelectionDAG &DAG) const;
 
-        SDValue lowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
-        SDValue getTargetNode(JumpTableSDNode *N, EVT Ty, SelectionDAG &DAG,
+      SDValue lowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
+      SDValue getTargetNode(JumpTableSDNode *N, EVT Ty, SelectionDAG &DAG,
                               unsigned Flag) const;
       SDValue getTargetNode(BlockAddressSDNode *N, EVT Ty, SelectionDAG &DAG,
                             unsigned Flag) const;
@@ -216,21 +210,13 @@ namespace llvm {
                                DAG.getNode(AlexISD::Lo, DL, Ty, Lo));
         }
 
+      void writeVarArgRegs(std::vector<SDValue> &OutChains,
+                                               const AlexCC &CC, SDValue Chain,
+                                               SDLoc DL, SelectionDAG &DAG) const;
+      SDValue lowerVASTART(SDValue Op, SelectionDAG &DAG) const;
 
-//      template<class NodeTy>
-//      SDValue getAddrLocal(NodeTy *N, EVT Ty, SelectionDAG &DAG) const {
-//          SDLoc DL(N);
-//          unsigned GOTFlag = AlexII::MO_GOT;
-//          SDValue GOT = DAG.getNode(AlexISD::Wrapper, DL, Ty, getGlobalReg(DAG, Ty),
-//                                    getTargetNode(N, Ty, DAG, GOTFlag));
-//          SDValue Load = DAG.getLoad(Ty, DL, DAG.getEntryNode(), GOT,
-//                                     MachinePointerInfo::getGOT(MF), false, false,
-//                                     false, 0);
-//          unsigned LoFlag = Alex::MO_ABS_LO;
-//          SDValue Lo = DAG.getNode(AlexISD::Lo, DL, Ty,
-//                                   getTargetNode(N, Ty, DAG, LoFlag));
-//          return DAG.getNode(ISD::ADD, DL, Ty, Load, Lo);
-//      }
+      SDValue lowerSELECT(SDValue Op, SelectionDAG &DAG) const;
+
         bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const override {
             return false;
         }

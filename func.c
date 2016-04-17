@@ -99,7 +99,11 @@ int test_return_shit1() {
   return a + m;
 }
 
-/*
+int test_quest(int a, int b) {
+  return a > b ? a : b;
+}
+
+
 int test_switch(int a, int *ary) {
   switch(a) {
     case 1:
@@ -115,7 +119,7 @@ int test_switch(int a, int *ary) {
   }
   return -1;
 }
-*/
+
 int main() {
   return 0;
 }
