@@ -1,11 +1,12 @@
 int fuck;
 
 struct Shit {
-    int _;
-    int __;
-    int ___;
-    int a;
-    int b;
+  int _;
+  int __;
+  int ___;
+  int a;
+  int b;
+  int c;
 };
 struct Shit smallShit;
 
@@ -89,12 +90,14 @@ void test_param_struct1() {
   test_param_struct(smallShit);
 }
 
-/*struct Shit test_return_struct() {
+struct Shit test_return_struct() {
   return smallShit;
 }
 int test_return_shit1() {
-  test_return_struct().a;
-}*/
+  int a = test_return_struct().a;
+  int m = test_return_struct().b;
+  return a + m;
+}
 
 /*
 int test_switch(int a, int *ary) {

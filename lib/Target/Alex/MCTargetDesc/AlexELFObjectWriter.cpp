@@ -72,6 +72,9 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
         case Alex::fixup_Alex_LO16:
             Type = ELF::R_ALEX_LO16;
             break;
+        case Alex::fixup_Alex_PC16:
+            Type = ELF::R_ALEX_PC16;
+            break;
         case Alex::fixup_Alex_GOT_HI16:
             Type = ELF::R_ALEX_GOT_HI16;
             break;

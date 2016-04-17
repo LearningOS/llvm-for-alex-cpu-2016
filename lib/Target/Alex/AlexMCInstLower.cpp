@@ -196,7 +196,7 @@ MCOperand AlexMCInstLower::LowerOperand(const MachineOperand& MO,
 //#endif
 //#if CH >= CH8_1
 //  case MachineOperand::MO_JumpTableIndex:
-//  case MachineOperand::MO_BlockAddress:
+  case MachineOperand::MO_BlockAddress:
 //#endif
 
   case MachineOperand::MO_GlobalAddress:

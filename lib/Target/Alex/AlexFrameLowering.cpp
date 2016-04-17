@@ -26,7 +26,9 @@ void AlexFrameLowering::determineCalleeSaves(MachineFunction &MF,
     TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
     //Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
     //MachineRegisterInfo& MRI = MF.getRegInfo();
-   // SavedRegs.set(Alex::LR);
+//    SavedRegs.set(Alex::S0);
+//    SavedRegs.set(Alex::S1);
+//    SavedRegs.set(Alex::S2);
 
     return;
 }
@@ -34,7 +36,6 @@ void AlexFrameLowering::determineCalleeSaves(MachineFunction &MF,
 void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const {
     assert(&MF.front() == &MBB && "Shrink-wrapping not yet supported");
     MachineFrameInfo *MFI    = MF.getFrameInfo();
-    //Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
 
     const AlexInstrInfo &TII =
             *static_cast<const AlexInstrInfo*>(subtarget->getInstrInfo());
@@ -45,7 +46,7 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
     DebugLoc dl = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
     //Cpu0ABIInfo ABI = STI.getABI();
     unsigned SP = Alex::SP;
-    const TargetRegisterClass *RC = &Alex::Int32RegsRegClass;
+    auto RC = &Alex::Int32RegsRegClass;
 
     // push $fp
     BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
@@ -97,7 +98,6 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
             }
         }
     }
-
 }
 
 void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const {
@@ -125,6 +125,6 @@ void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB
 
     // restore fp
     BuildMI(MBB, MBBI, dl, TII.get(Alex::LW), Alex::FP).addReg(Alex::SP).addImm(0);
-    //BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
+    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
     //BuildMI(MBB, MBBI, dl, TII.get(Alex::MTRA)).addReg(Alex::SP).addImm(0);
 }

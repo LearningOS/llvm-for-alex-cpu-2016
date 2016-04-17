@@ -92,7 +92,7 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 
             // call func
             if (MI->getDesc().getOpcode() == Alex::CALLg) {
-                //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addGlobalAddress(MI->getOperand(0).getGlobal());
+                BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addGlobalAddress(MI->getOperand(0).getGlobal());
             }
             else if (MI->getDesc().getOpcode() == Alex::CALLi) {
                 auto imm = MI->getOperand(0).getImm();

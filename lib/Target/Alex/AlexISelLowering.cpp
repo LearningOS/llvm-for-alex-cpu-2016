@@ -56,13 +56,14 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
     setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
     setOperationAction(ISD::VASTART,           MVT::Other, Expand);
     setOperationAction(ISD::GlobalAddress,     MVT::i32,   Custom);
+    setOperationAction(ISD::BlockAddress,      MVT::i32,   Custom);
+    setOperationAction(ISD::JumpTable,         MVT::i32,   Custom);
     // Support va_arg(): variable numbers (not fixed numbers) of arguments
     //  (parameters) for function all
     setOperationAction(ISD::VAARG,             MVT::Other, Expand);
     setOperationAction(ISD::VACOPY,            MVT::Other, Expand);
     setOperationAction(ISD::VAEND,             MVT::Other, Expand);
     setOperationAction(ISD::BR_JT,             MVT::Other, Expand);
-    setOperationAction(ISD::JumpTable,         MVT::i32,   Custom);
 
     //@llvm.stacksave
     // Use the default for now
@@ -77,7 +78,7 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
     {
       //  case ISD::BRCOND:             return lowerBRCOND(Op, DAG);
         case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
-      //  case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
+        case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
         case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
        // case ISD::SELECT:             return lowerSELECT(Op, DAG);
     }
@@ -102,6 +103,18 @@ SDValue AlexTargetLowering::getTargetNode(ExternalSymbolSDNode *N, EVT Ty,
                                           unsigned Flag) const {
     return DAG.getTargetExternalSymbol(N->getSymbol(), Ty);
 }
+SDValue AlexTargetLowering::getTargetNode(BlockAddressSDNode *N, EVT Ty,
+                                          SelectionDAG &DAG,
+                                          unsigned Flag) const {
+    return DAG.getTargetBlockAddress(N->getBlockAddress(), Ty, 0, Flag);
+}
+SDValue AlexTargetLowering::lowerBlockAddress(SDValue Op,
+                                              SelectionDAG &DAG) const {
+    BlockAddressSDNode *N = cast<BlockAddressSDNode>(Op);
+    EVT Ty = Op.getValueType();
+
+    return getAddrNonPIC(N, Ty, DAG);
+}
 
 template<class NodeTy>
 SDValue AlexTargetLowering::getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
@@ -122,34 +135,8 @@ SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
     EVT Ty = Op.getValueType();
     GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
     const GlobalValue *GV = N->getGlobal();
-    //@lga 1 }
 
-    /*if (getTargetMachine().getRelocationModel() != Reloc::PIC_) {
-        //@ %gp_rel relocation
-        if (TLOF->IsGlobalInSmallSection(GV, getTargetMachine())) {
-            SDValue GA = DAG.getTargetGlobalAddress(GV, DL, MVT::i32, 0,
-                                                    AlexII::MO_GPREL);
-            SDValue GPRelNode = DAG.getNode(AlexISD::GPRel, DL,
-                                            DAG.getVTList(MVT::i32), GA);
-            SDValue GPReg = DAG.getRegister(Alex::GP, MVT::i32);
-            return DAG.getNode(ISD::ADD, DL, MVT::i32, GPReg, GPRelNode);
-        }
-
-        //@ %hi/%lo relocation
-
-    }*/
     return getAddrNonPIC(N, Ty, DAG);
-
-    //if (GV->hasInternalLinkage() || (GV->hasLocalLinkage() && !isa<Function>(GV)))
-    //    return getAddrLocal(N, Ty, DAG);
-
-    //@large section
-    //if (!TLOF->IsGlobalInSmallSection(GV, getTargetMachine()))
-    //    return getAddrGlobalLargeGOT(N, Ty, DAG, AlexII::MO_GOT_HI16,
-    //                                 AlexII::MO_GOT_LO16, DAG.getEntryNode(),
-    //                                 MachinePointerInfo::getGOT());
-    //MachineFunction &MF = DAG.getMachineFunction();
-    //return getAddrGlobal(N, Ty, DAG, 0, DAG.getEntryNode(), MachinePointerInfo::getGOT(MF));
 }
 
 static unsigned
@@ -226,6 +213,23 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
                                    false, false, false, 0);
         InVals.push_back(Load);
         OutChains.push_back(Load.getValue(1));
+    }
+
+    for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+        // The cpu0 ABIs for returning structs by value requires that we copy
+        // the sret argument into $v0 for the return. Save the argument into
+        // a virtual register so that we can access it from the return points.
+        if (Ins[i].Flags.isSRet()) {
+            unsigned Reg = AlexFI->getSRetReturnReg();
+            if (!Reg) {
+                Reg = MF.getRegInfo().createVirtualRegister(
+                        getRegClassFor(MVT::i32));
+                AlexFI->setSRetReturnReg(Reg);
+            }
+            SDValue Copy = dag.getCopyToReg(dag.getEntryNode(), dl, Reg, InVals[i]);
+            chain = dag.getNode(ISD::TokenFactor, dl, MVT::Other, Copy, chain);
+            break;
+        }
     }
 
     // All stores are grouped in one node to allow the matching between
@@ -425,21 +429,6 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
     // Get a count of how many bytes are to be pushed on the stack.
     unsigned NextStackOffset = CCInfo.getNextStackOffset();
-
-    //@TailCall 1 {
-    // Check if it's really possible to do a tail call.
-    //if (IsTailCall)
-    //    IsTailCall =
-    //            isEligibleForTailCallOptimization(AlexCCInfo, NextStackOffset,
-    //                                              *MF.getInfo<AlexFunctionInfo>());
-
-    //if (!IsTailCall && CLI.CS && CLI.CS->isMustTailCall())
-    //    report_fatal_error("failed to perform tail call elimination on a call "
-   //                                "site marked musttail");
-
-    //if (IsTailCall)
-    //    ++NumTailCalls;
-    //@TailCall 1 }
 
     // Chain is the output chain of the last Load/Store or CopyToReg node.
     // ByValChain is the output chain of the last Memcpy node created for copying

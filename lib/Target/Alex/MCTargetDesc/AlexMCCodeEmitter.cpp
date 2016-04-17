@@ -96,17 +96,15 @@ unsigned AlexMCCodeEmitter::
 getBranch16TargetOpValue(const MCInst &MI, unsigned OpNo,
                          SmallVectorImpl<MCFixup> &Fixups,
                          const MCSubtargetInfo &STI) const {
-    return 0;
-}
+    const MCOperand &MO = MI.getOperand(OpNo);
 
-/// getBranch24TargetOpValue - Return binary encoding of the branch
-/// target operand. If the machine operand requires relocation,
-/// record the relocation and return zero.
-unsigned AlexMCCodeEmitter::
-getBranch24TargetOpValue(const MCInst &MI, unsigned OpNo,
-                         SmallVectorImpl<MCFixup> &Fixups,
-                         const MCSubtargetInfo &STI) const {
-    return 0;
+    // If the destination is an immediate, we have nothing to do.
+    if (MO.isImm()) return MO.getImm();
+    assert(MO.isExpr() && "getBranch16TargetOpValue expects only expressions");
+
+    const MCExpr *Expr = MO.getExpr();
+    Fixups.push_back(MCFixup::create(0, Expr,
+                                     MCFixupKind(Alex::fixup_Alex_PC16)));
 }
 
 /// getJumpTargetOpValue - Return binary encoding of the jump

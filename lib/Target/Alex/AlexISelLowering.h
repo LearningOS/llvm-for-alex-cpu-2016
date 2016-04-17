@@ -203,7 +203,10 @@ namespace llvm {
         SDValue lowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
         SDValue getTargetNode(JumpTableSDNode *N, EVT Ty, SelectionDAG &DAG,
                               unsigned Flag) const;
-        template<class NodeTy>
+      SDValue getTargetNode(BlockAddressSDNode *N, EVT Ty, SelectionDAG &DAG,
+                            unsigned Flag) const;
+      SDValue lowerBlockAddress(SDValue Op, SelectionDAG &DAG) const;
+      template<class NodeTy>
         SDValue getAddrNonPIC(NodeTy *N, EVT Ty, SelectionDAG &DAG) const {
             SDLoc DL(N);
             SDValue Lo = getTargetNode(N, Ty, DAG, AlexII::MO_ABS_LO);
@@ -212,6 +215,22 @@ namespace llvm {
                                DAG.getNode(AlexISD::Hi, DL, Ty, Hi),
                                DAG.getNode(AlexISD::Lo, DL, Ty, Lo));
         }
+
+
+//      template<class NodeTy>
+//      SDValue getAddrLocal(NodeTy *N, EVT Ty, SelectionDAG &DAG) const {
+//          SDLoc DL(N);
+//          unsigned GOTFlag = AlexII::MO_GOT;
+//          SDValue GOT = DAG.getNode(AlexISD::Wrapper, DL, Ty, getGlobalReg(DAG, Ty),
+//                                    getTargetNode(N, Ty, DAG, GOTFlag));
+//          SDValue Load = DAG.getLoad(Ty, DL, DAG.getEntryNode(), GOT,
+//                                     MachinePointerInfo::getGOT(MF), false, false,
+//                                     false, 0);
+//          unsigned LoFlag = Alex::MO_ABS_LO;
+//          SDValue Lo = DAG.getNode(AlexISD::Lo, DL, Ty,
+//                                   getTargetNode(N, Ty, DAG, LoFlag));
+//          return DAG.getNode(ISD::ADD, DL, Ty, Load, Lo);
+//      }
         bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const override {
             return false;
         }

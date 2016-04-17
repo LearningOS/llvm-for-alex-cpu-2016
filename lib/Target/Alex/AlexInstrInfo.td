@@ -437,7 +437,7 @@ def GE      : CompareRRR<0x22, "ge", setge, Int32Regs>;
 defm LW     : LoadM32<0x2d,  "lw",  load_a>;
 defm SW     : StoreM32<0x34, "sw",  store_a>;
 // use addi
-defm LEAW   : LeaM32<0x02, "add">;
+defm LEAW   : LeaM32<0x02, "addi">;
 
 def LI      : InstrRI<0x31, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "li\t$ra, $imm16",
@@ -494,20 +494,14 @@ class CBranch24<bits<8> op, string instr_asm, RegisterClass RC,
   let isTerminator = 1;
   let hasDelaySlot = 1;
 }
-def brtarget24    : Operand<OtherVT> {
-  let EncoderMethod = "getBranch24TargetOpValue";
+
+def brtarget16    : Operand<OtherVT> {
+  let EncoderMethod = "getBranch16TargetOpValue";
   let OperandType = "OPERAND_PCREL";
-  let DecoderMethod = "DecodeBranch24Target";
+  let DecoderMethod = "DecodeBranch16Target";
 }
 
-def J : InstrI<0x29, (outs), (ins brtarget24:$imm16),
-             "j\t$imm16", [(br bb:$imm16)], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let isBarrier = 1;
-  let hasDelaySlot = 1;
-}
-def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget24:$imm16),
+def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
           "bnz\t$ra, $imm16",
           [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary> {
   let isBranch = 1;
@@ -516,7 +510,7 @@ def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget24:$imm16),
   let hasDelaySlot = 1;
 }
 /* BNEZ 这里指令有冲突, ra rb可能为0 和bne分不开*/
-def BNEZ : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
+def BNEZ : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "bne\t$ra, $rb, $imm16",
          [(brcond (i32 (setne Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
   let isBranch = 1;
@@ -525,7 +519,7 @@ def BNEZ : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:
   let hasDelaySlot = 1;
 }
 
-def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
+def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "blt\t$ra, $rb, $imm16",
          [(brcond (i32 (setlt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
   let isBranch = 1;
@@ -534,7 +528,7 @@ def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$
   let hasDelaySlot = 1;
 }
 
-def BGT : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$imm16),
+def BGT : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "bgt\t$ra, $rb, $imm16",
          [(brcond (i32 (setgt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary> {
   let isBranch = 1;
@@ -545,8 +539,20 @@ def BGT : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget24:$
 
 
 /* 函数调用 */
+def jmptarget  : Operand<OtherVT> {
+  let EncoderMethod = "getBranch16TargetOpValue";
+  let OperandType = "OPERAND_PCREL";
+}
 def calltarget  : Operand<iPTR> {
   let EncoderMethod = "getJumpTargetOpValue";
+}
+
+def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
+             "j\t$imm16", [(br bb:$imm16)], NoItinerary> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let hasDelaySlot = 1;
 }
 
 def SDT_AlexCallLink      : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
