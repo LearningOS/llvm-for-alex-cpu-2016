@@ -189,6 +189,15 @@ class AlexInstAlias<string Asm, dag Result, bit Emit = 0b1> :
 // Instruction format superclass
 //===----------------------------------------------------------------------===//
 
+class AlexAsmPseudoInst<dag outs, dag ins, string asmstr>:
+  AlexInst<outs, ins, asmstr, [], NoItinerary, Pseudo> {
+  let isPseudo = 1;
+  let Pattern = [];
+}
+def AlexMemAsmOperand : AsmOperandClass {
+  let Name = "Mem";
+  let ParserMethod = "parseMemOperand";
+}
 
 //===----------------------------------------------------------------------===//
 // Alex Operand, Complex Patterns and Transformations Definitions.
@@ -215,7 +224,26 @@ def mem : Operand<iPTR> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops Int32Regs, simm16);
   let EncoderMethod = "getMemEncoding";
+  let ParserMatchClass = AlexMemAsmOperand;
 }
+
+
+class LoadImm32< string instr_asm, Operand Od, RegisterClass RC> :
+  AlexAsmPseudoInst<(outs RC:$ra), (ins Od:$imm32),
+                     !strconcat(instr_asm, "\t$ra, $imm32")> ;
+def LoadImm32Reg : LoadImm32<"li", shamt, Int32Regs>;
+
+class LoadAddress<string instr_asm, Operand MemOpnd, RegisterClass RC> :
+  AlexAsmPseudoInst<(outs RC:$ra), (ins MemOpnd:$addr),
+                     !strconcat(instr_asm, "\t$ra, $addr")> ;
+def LoadAddr32Reg : LoadAddress<"la", mem, Int32Regs>;
+
+//class LoadAddressImm<string instr_asm, Operand Od, RegisterClass RC> :
+//  AlexAsmPseudoInst<(outs RC:$ra), (ins Od:$imm32),
+//                     !strconcat(instr_asm, "\t$ra, $imm32")> ;
+//def LoadAddr32Imm : LoadAddressImm<"la", shamt, Int32Regs>;
+
+
 
 def memaddr : Operand<iPTR> {
   let PrintMethod = "printMemAddrOperand";
@@ -517,9 +545,9 @@ def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
           "bnz\t$ra, $imm16",
           [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
 /* BNEZ 这里指令有冲突, ra rb可能为0 和bne分不开*/
-def BNEZ : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bne\t$ra, $rb, $imm16",
-         [(brcond (i32 (setne Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+def BNEZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
+        "bnez\t$ra, $imm16",
+         [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
 def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "blt\t$ra, $rb, $imm16",
          [(brcond (i32 (setlt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
@@ -607,11 +635,11 @@ def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
           (ORi Int32Regs:$hi, tglobaladdr:$lo)>;
 
 def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BLT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+          (BNEZ (LT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BGT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+          (BNEZ (GT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETLE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BLE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+          (BNEZ (LE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BGE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
 def : Pat<(brcc SETEQ, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),

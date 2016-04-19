@@ -4,7 +4,7 @@ tablegen(LLVM AlexGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM AlexGenInstrInfo.inc -gen-instr-info)
 #tablegen(LLVM AlexGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM AlexGenAsmWriter.inc -gen-asm-writer)
-#tablegen(LLVM AlexGenAsmMatcher.inc -gen-asm-matcher)
+tablegen(LLVM AlexGenAsmMatcher.inc -gen-asm-matcher)
 tablegen(LLVM AlexGenCodeEmitter.inc -gen-emitter)
 tablegen(LLVM AlexGenMCCodeEmitter.inc -gen-emitter)
 
@@ -29,3 +29,4 @@ add_llvm_target(AlexCodeGen
 add_subdirectory(MCTargetDesc)
 add_subdirectory(InstPrinter)
 add_subdirectory(TargetInfo)
+add_subdirectory(AsmParser)

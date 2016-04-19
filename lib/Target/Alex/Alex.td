@@ -12,7 +12,21 @@ def AlexAsmWriter : AsmWriter {
   int Variant = 0;
 }
 
+def AlexAsmParser : AsmParser {
+  let ShouldEmitMatchRegisterName = 0;
+}
+
+def AlexAsmParserVariant : AsmParserVariant {
+  int Variant = 0;
+
+  // Recognize hard coded registers.
+  string RegisterPrefix = "$";
+}
+
 def Alex : Target {
   let InstructionSet = AlexInstrInfo;
   let AssemblyWriters = [AlexAsmWriter];
+  let AssemblyParsers = [AlexAsmParser];
+    let AssemblyParserVariants = [AlexAsmParserVariant];
 }
+

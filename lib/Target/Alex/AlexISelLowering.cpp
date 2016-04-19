@@ -176,7 +176,7 @@ void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
 
 SDValue AlexTargetLowering::getGlobalReg(SelectionDAG &DAG, EVT Ty) const {
     AlexFunctionInfo *FI = DAG.getMachineFunction().getInfo<AlexFunctionInfo>();
-    return DAG.getRegister(Alex::PC, Ty);
+    return DAG.getRegister(Alex::GP, Ty);
 }
 
 //@getTargetNode(GlobalAddressSDNode

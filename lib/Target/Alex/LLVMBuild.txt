@@ -1,11 +1,12 @@
 [common]
-subdirectories = MCTargetDesc InstPrinter TargetInfo ;AsmParser Disassembler
+subdirectories = MCTargetDesc InstPrinter TargetInfo AsmParser ;Disassembler
 
 [component_0]
 type = TargetGroup
 name = Alex
 parent = Target
 has_asmprinter = 1
+has_asmparser = 1
 
 [component_1]
 type = Library

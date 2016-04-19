@@ -13,7 +13,7 @@ using namespace llvm;
 #include "AlexGenRegisterInfo.inc"
 
 AlexRegisterInfo::AlexRegisterInfo(const AlexSubtarget *subtarget)
-        :AlexGenRegisterInfo(Alex::PC), subtarget(subtarget) {}
+        :AlexGenRegisterInfo(Alex::LR /* RA */), subtarget(subtarget) {}
 
 unsigned AlexRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
     return Alex::FP;
@@ -29,7 +29,10 @@ BitVector AlexRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     BitVector Reserved(getNumRegs());
     Reserved.set(Alex::SP);
     Reserved.set(Alex::FP);
-    Reserved.set(Alex::PC);
+    Reserved.set(Alex::R0);
+    Reserved.set(Alex::AT);
+    Reserved.set(Alex::LR);
+    Reserved.set(Alex::GP);
     return Reserved;
 }
 
