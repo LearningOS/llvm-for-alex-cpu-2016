@@ -238,10 +238,10 @@ class LoadAddress<string instr_asm, Operand MemOpnd, RegisterClass RC> :
                      !strconcat(instr_asm, "\t$ra, $addr")> ;
 def LoadAddr32Reg : LoadAddress<"la", mem, Int32Regs>;
 
-//class LoadAddressImm<string instr_asm, Operand Od, RegisterClass RC> :
-//  AlexAsmPseudoInst<(outs RC:$ra), (ins Od:$imm32),
-//                     !strconcat(instr_asm, "\t$ra, $imm32")> ;
-//def LoadAddr32Imm : LoadAddressImm<"la", shamt, Int32Regs>;
+class LoadAddressImm<string instr_asm, Operand Od, RegisterClass RC> :
+  AlexAsmPseudoInst<(outs RC:$ra), (ins Od:$imm32),
+                     !strconcat(instr_asm, "\t$ra, $imm32")> ;
+def LoadAddr32Imm : LoadAddressImm<"la", shamt, Int32Regs>;
 
 
 

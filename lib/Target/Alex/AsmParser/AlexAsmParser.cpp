@@ -558,14 +558,14 @@ bool AlexAsmParser::ParseOperand(OperandVector &Operands,
   DEBUG(dbgs() << "ParseOperand\n");
   // Check if the current operand has a custom associated parser, if so, try to
   // custom parse the operand, or fallback to the general approach.
-  //OperandMatchResultTy ResTy = MatchOperandParserImpl(Operands, Mnemonic);
-  //if (ResTy == MatchOperand_Success)
-  //  return false;
+  OperandMatchResultTy ResTy = MatchOperandParserImpl(Operands, Mnemonic);
+  if (ResTy == MatchOperand_Success)
+    return false;
   // If there wasn't a custom match, try the generic matcher below. Otherwise,
   // there was a match, but an error occurred, in which case, just return that
   // the operand parsing failed.
-  //if (ResTy == MatchOperand_ParseFail)
-  //  return true;
+  if (ResTy == MatchOperand_ParseFail)
+    return true;
 
   DEBUG(dbgs() << ".. Generic Parser\n");
 

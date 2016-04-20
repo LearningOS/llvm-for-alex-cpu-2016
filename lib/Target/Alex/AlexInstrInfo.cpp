@@ -171,3 +171,11 @@ void AlexInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                     addReg(SrcReg, getKillRegState(KillSrc)).
                     addImm(0);
 }
+
+unsigned AlexInstrInfo::GetInstSizeInBytes(const MachineInstr *MI) const {
+    if (MI->getOpcode() ==  TargetOpcode::INLINEASM) {       // Inline Asm: Variable size.
+        const MachineFunction *MF = MI->getParent()->getParent();
+        const char *AsmStr = MI->getOperand(0).getSymbolName();
+        return getInlineAsmLength(AsmStr, *MF->getTarget().getMCAsmInfo());
+    }
+}

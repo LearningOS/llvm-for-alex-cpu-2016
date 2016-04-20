@@ -9,31 +9,34 @@
 
 namespace llvm {
 
-    class AlexDAGToDAGISel : public SelectionDAGISel {
-    public:
-        explicit AlexDAGToDAGISel(AlexTargetMachine &TM)
+class AlexDAGToDAGISel : public SelectionDAGISel {
+public:
+  explicit AlexDAGToDAGISel(AlexTargetMachine &TM)
                 : SelectionDAGISel(TM), Subtarget(nullptr) { }
 
-        const char *getPassName() const override {
-            return "Alex DAG->DAG Pattern Instruction Selection";
-        }
+  const char *getPassName() const override {
+      return "Alex DAG->DAG Pattern Instruction Selection";
+  }
 
-        bool runOnMachineFunction(MachineFunction &MF) override;
+  bool runOnMachineFunction(MachineFunction &MF) override;
 
-    protected:
-        const AlexSubtarget *Subtarget;
-    private:
+protected:
+  const AlexSubtarget *Subtarget;
+private:
 #include "AlexGenDAGISel.inc"
 
-        SDNode *Select(SDNode *N) override;
+  SDNode *Select(SDNode *N) override;
 
-        // Complex Pattern.
-        bool SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, SDValue &Offset);
+  // Complex Pattern.
+  bool SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, SDValue &Offset);
 
-        inline SDValue getImm(const SDNode *Node, unsigned Imm) {
-            return CurDAG->getTargetConstant(Imm, SDLoc(Node), Node->getValueType(0));
-        }
-    };
+  inline SDValue getImm(const SDNode *Node, unsigned Imm) {
+      return CurDAG->getTargetConstant(Imm, SDLoc(Node), Node->getValueType(0));
+  }
+
+  bool SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
+                                    std::vector<SDValue> &OutOps);
+};
 }
 
 #endif
