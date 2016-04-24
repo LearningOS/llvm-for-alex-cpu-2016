@@ -36,6 +36,13 @@ namespace llvm {
                      MachineBasicBlock::iterator I, DebugLoc DL,
                      unsigned DestReg, unsigned SrcReg,
                      bool KillSrc) const override;
+    unsigned InsertBranch(MachineBasicBlock &MBB, MachineBasicBlock *TBB,
+                                  MachineBasicBlock *FBB,
+                                  ArrayRef<MachineOperand> Cond,
+                                  DebugLoc DL) const override {
+      return 0;
+    }
+
   };
 }
 

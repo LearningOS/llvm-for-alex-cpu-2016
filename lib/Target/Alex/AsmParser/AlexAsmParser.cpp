@@ -342,7 +342,7 @@ void AlexAsmParser::expandLoadImm(MCInst &Inst, SMLoc IDLoc,
     // for any other value of j that is representable as a 32-bit integer.
     // li d,j => lui d,hi16(j)
     //           ori d,d,lo16(j)
-    tmpInst.setOpcode(Alex::LIH);
+    tmpInst.setOpcode(Alex::LIh);
     tmpInst.addOperand(MCOperand::createReg(RegOp.getReg()));
     tmpInst.addOperand(MCOperand::createImm((ImmValue & 0xffff0000) >> 16));
     Instructions.push_back(tmpInst);
@@ -379,7 +379,7 @@ void AlexAsmParser::expandLoadAddressReg(MCInst &Inst, SMLoc IDLoc,
     // la d,j(s) => lui d,hi16(j)
     //              ori d,d,lo16(j)
     //              add d,d,s
-    tmpInst.setOpcode(Alex::LIH);
+    tmpInst.setOpcode(Alex::LIh);
     tmpInst.addOperand(MCOperand::createReg(DstRegOp.getReg()));
     tmpInst.addOperand(MCOperand::createImm((ImmValue & 0xffff0000) >> 16));
     Instructions.push_back(tmpInst);
@@ -419,7 +419,7 @@ void AlexAsmParser::expandLoadAddressImm(MCInst &Inst, SMLoc IDLoc,
     // for any other value of j that is representable as a 32-bit integer.
     // la d,j => lui d,hi16(j)
     //           ori d,d,lo16(j)
-    tmpInst.setOpcode(Alex::LIH);
+    tmpInst.setOpcode(Alex::LIh);
     tmpInst.addOperand(MCOperand::createReg(RegOp.getReg()));
     tmpInst.addOperand(MCOperand::createImm((ImmValue & 0xffff0000) >> 16));
     Instructions.push_back(tmpInst);

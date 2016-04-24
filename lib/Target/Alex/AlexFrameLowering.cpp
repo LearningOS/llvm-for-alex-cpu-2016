@@ -128,3 +128,33 @@ void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB
     BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
     //BuildMI(MBB, MBBI, dl, TII.get(Alex::MTRA)).addReg(Alex::SP).addImm(0);
 }
+
+bool AlexFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+                          MachineBasicBlock::iterator MI,
+                          const std::vector<CalleeSavedInfo> &CSI,
+                          const TargetRegisterInfo *TRI) const {
+    MachineFunction *MF = MBB.getParent();
+    auto EntryBlock = MF->begin();
+    const TargetInstrInfo &TII = *MF->getSubtarget().getInstrInfo();
+
+    for (unsigned i = 0, e = CSI.size(); i != e; ++i) {
+        // Add the callee-saved register as live-in. Do not add if the register is
+        // LR and return address is taken, because it has already been added in
+        // method Cpu0TargetLowering::LowerRETURNADDR.
+        // It's killed at the spill, unless the register is LR and return address
+        // is taken.
+        unsigned Reg = CSI[i].getReg();
+        //bool IsRAAndRetAddrIsTaken = (Reg == Cpu0::LR)
+        //                             && MF->getFrameInfo()->isReturnAddressTaken();
+        //if (!IsRAAndRetAddrIsTaken)
+        EntryBlock->addLiveIn(Reg);
+
+        // Insert the spill to the stack frame.
+        bool IsKill = true;
+        const TargetRegisterClass *RC = TRI->getMinimalPhysRegClass(Reg);
+        TII.storeRegToStackSlot(*EntryBlock, MI, Reg, IsKill,
+                                CSI[i].getFrameIdx(), RC, TRI);
+    }
+
+    return true;
+}

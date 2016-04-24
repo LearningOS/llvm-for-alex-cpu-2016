@@ -6,6 +6,7 @@
 #include "AlexFrameLowering.h"
 #include "AlexISelLowering.h"
 #include <llvm/ADT/STLExtras.h>
+#include "llvm/CodeGen/SelectionDAGTargetInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -29,7 +30,8 @@ AlexSubtarget::AlexSubtarget(const Triple &TT, const std::string &CPU, const std
               targetTriple(TT),
               instrInfo(new AlexInstrInfo(this)),
               FrameLowering(new AlexFrameLowering(this)),
-              instrItineraryData(nullptr)
+              instrItineraryData(nullptr),
+              TSInfo(new SelectionDAGTargetInfo)
 
 {
     registerInfo = new AlexRegisterInfo(this);

@@ -74,6 +74,16 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
     setOperationAction(ISD::BlockAddress,      MVT::i32,   Custom);
     setOperationAction(ISD::JumpTable,         MVT::i32,   Custom);
     setOperationAction(ISD::JumpTable,         MVT::Other, Custom);
+    setSelectIsExpensive(true);
+
+    /* Unimplemented instructions */
+    setOperationAction(ISD::MULHS, MVT::i32, Custom);
+    setOperationAction(ISD::SMUL_LOHI, MVT::i32, Expand);
+    setLoadExtAction(ISD::EXTLOAD, MVT::i32, MVT::i1, Custom);
+    setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i1, Custom);
+    setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i8, Custom);
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8, Expand);
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i32, Expand);
 
     // Support va_arg(): variable numbers (not fixed numbers) of arguments
     //  (parameters) for function all
@@ -94,11 +104,16 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
     switch (Op.getOpcode())
     {
     case ISD::VASTART:            return lowerVASTART(Op, DAG);
-      //  case ISD::BRCOND:             return lowerBRCOND(Op, DAG);
     case ISD::SELECT:             return lowerSELECT(Op, DAG);
     case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
     case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
     case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
+    case ISD::MULHS:
+    case ISD::SIGN_EXTEND_INREG:
+    case ISD::ANY_EXTEND:
+    case ISD::LOAD:
+    case ISD::SMUL_LOHI:
+        break;
     }
     return SDValue();
 }
@@ -114,6 +129,16 @@ SDValue AlexTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const  {
     return DAG.getConstant(0x1234, DL, MVT::i16);
     //return DAG.getStore(Op.getOperand(0), DL, FI,
     //             Op.getOperand(1), nullptr, false, false, 0);
+}
+
+SDValue AlexTargetLowering::lowerMulHS(SDValue Op, SelectionDAG &DAG) const  {
+    MachineFunction &MF = DAG.getMachineFunction();
+    AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
+
+    SDLoc DL = SDLoc(Op);
+
+
+    return DAG.getConstant(0, DL, MVT::i16);
 }
 
 SDValue AlexTargetLowering::lowerVASTART(SDValue Op, SelectionDAG &DAG) const {
@@ -488,16 +513,16 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     SmallVectorImpl<ISD::InputArg> &Ins   = CLI.Ins;
     SDValue Chain                         = CLI.Chain;
     SDValue Callee                        = CLI.Callee;
-    bool &IsTailCall                      = CLI.IsTailCall;
+    CLI.IsTailCall = false;
     CallingConv::ID CallConv              = CLI.CallConv;
     bool IsVarArg                         = CLI.IsVarArg;
 
     MachineFunction &MF = DAG.getMachineFunction();
-    MachineFrameInfo *MFI = MF.getFrameInfo();
-    const TargetFrameLowering *TFL = MF.getSubtarget().getFrameLowering();
+    //MachineFrameInfo *MFI = MF.getFrameInfo();
+    //const TargetFrameLowering *TFL = MF.getSubtarget().getFrameLowering();
     AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
-    bool IsPIC = false;//getTargetMachine().getRelocationModel() == Reloc::PIC_;
-    AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
+    //bool IsPIC = false;//getTargetMachine().getRelocationModel() == Reloc::PIC_;
+    //AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
 
     // Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ArgLocs;
@@ -522,10 +547,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     //NextStackOffset = RoundUpToAlignment(NextStackOffset, StackAlignment);
     SDValue NextStackOffsetVal = DAG.getIntPtrConstant(NextStackOffset, DL, true);
 
-    //@TailCall 2 {
-    //if (!IsTailCall)
     Chain = DAG.getCALLSEQ_START(Chain, NextStackOffsetVal, DL);
-    //@TailCall 2 }
 
     SDValue StackPtr =
             DAG.getCopyFromReg(Chain, DL, Alex::SP,
@@ -545,20 +567,6 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
         MVT LocVT = VA.getLocVT();
         ISD::ArgFlagsTy Flags = Outs[i].Flags;
 
-        //@ByVal Arg {
-        /*if (Flags.isByVal()) {
-            assert(Flags.getByValSize() &&
-                   "ByVal args of size 0 should have been ignored by front-end.");
-            assert(ByValArg != AlexCCInfo.byval_end());
-            assert(!IsTailCall &&
-                   "Do not tail-call optimize if there is a byval argument.");
-            passByValArg(Chain, DL, RegsToPass, MemOpChains, StackPtr, MFI, DAG, Arg,
-                         AlexCCInfo, *ByValArg, Flags, Subtarget.isLittle());
-            ++ByValArg;
-            continue;
-        }*/
-        //@ByVal Arg }
-
         // Promote the value if needed.
         switch (VA.getLocInfo()) {
             default: llvm_unreachable("Unknown loc info!");
@@ -575,20 +583,13 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
                 break;
         }
 
-        // Arguments that can be passed on register must be kept at
-        // RegsToPass vector
-        //if (VA.isRegLoc()) {
-        //    RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
-        //    continue;
-        //}
-
         // Register can't get to this point...
         assert(VA.isMemLoc());
 
         // emit ISD::STORE whichs stores the
         // parameter value to a stack Location
         MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset(),
-                                             Chain, Arg, DL, IsTailCall, DAG));
+                                             Chain, Arg, DL, false, DAG));
     }
 
     // Transform all store nodes into one single node because all store
@@ -630,10 +631,6 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     getOpndList(Ops, RegsToPass, IsPICCall, GlobalOrExternal, InternalLinkage,
                 CLI, Callee, Chain);
 
-    //@TailCall 3 {
-    //if (IsTailCall)
-    //    return DAG.getNode(AlexISD::TailCall, DL, MVT::Other, Ops);
-    //@TailCall 3 }
 
     Chain = DAG.getNode(AlexISD::JmpLink, DL, NodeTys, Ops);
     SDValue InFlag = Chain.getValue(1);
@@ -692,21 +689,13 @@ SDValue
 AlexTargetLowering::passArgOnStack(SDValue StackPtr, unsigned Offset,
                                    SDValue Chain, SDValue Arg, SDLoc DL,
                                    bool IsTailCall, SelectionDAG &DAG) const {
-    if (!IsTailCall) {
-        SDValue PtrOff = DAG.getNode(ISD::ADD,
-                                     DL,
-                                     getPointerTy(DAG.getDataLayout()),
-                                     StackPtr,
-                                     DAG.getIntPtrConstant(Offset, DL));
-        return DAG.getStore(Chain, DL, Arg, PtrOff, MachinePointerInfo(), false,
-                            false, 0);
-    }
-
-    MachineFrameInfo *MFI = DAG.getMachineFunction().getFrameInfo();
-    int FI = MFI->CreateFixedObject(Arg.getValueSizeInBits() / 8, Offset, false);
-    SDValue FIN = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
-    return DAG.getStore(Chain, DL, Arg, FIN, MachinePointerInfo(),
-            /*isVolatile=*/ true, false, 0);
+    SDValue PtrOff = DAG.getNode(ISD::ADD,
+                                 DL,
+                                 getPointerTy(DAG.getDataLayout()),
+                                 StackPtr,
+                                 DAG.getIntPtrConstant(Offset, DL));
+    return DAG.getStore(Chain, DL, Arg, PtrOff, MachinePointerInfo(), false,
+                        false, 0);
 }
 
 

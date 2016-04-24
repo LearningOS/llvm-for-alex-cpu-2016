@@ -105,6 +105,18 @@ class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{19-16} = 0;
   let Inst{15-0}  = imm16;
 }
+class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
+{
+  bits<4>  ra;
+  bits<4>  rb;
+
+  let Opcode = op;
+
+  let Inst{23-20} = ra;
+  let Inst{19-16} = rb;
+  let Inst{15-0}  = 0;
+}
 class InstrRRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
 {
@@ -323,6 +335,13 @@ def truncstorei16_a : AlignedStore<truncstorei16>;
 // Instructions specific format
 //===----------------------------------------------------------------------===//
 
+class ArithLogicRR<bits<8> op, string instr_asm, SDNode OpNode,
+                  Operand Od, PatLeaf imm_type, RegisterClass RC> :
+  InstrRR<op, (outs Int32Regs:$ra), (ins RC:$rb),
+     !strconcat(instr_asm, "\t$ra, $rb"),
+     [(set Int32Regs:$ra, (OpNode RC:$rb))], NoItinerary> {
+  let isReMaterializable = 1;
+}
 
 // Arithmetic and logical instructions with 2 register operands.
 class ArithLogicRRI<bits<8> op, string instr_asm, SDNode OpNode,
@@ -418,6 +437,7 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 //===----------------------------------------------------------------------===//
 // Instruction definition
 //===----------------------------------------------------------------------===//
+def NOP     : InstrPlain<0x00, "nop", [], NoItinerary>;
 
 /* 算数逻辑指令 */
 
@@ -481,7 +501,7 @@ defm LEAW   : LeaM32<0x02, "addi">;
 def LI      : InstrRI<0x31, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "li\t$ra, $imm16",
             [(set Int32Regs:$ra, (i32 immSExt16:$imm16))], NoItinerary>;
-def LIH     : InstrRI<0x33, (outs Int32Regs:$ra), (ins simm16:$imm16),
+def LIh     : InstrRI<0x33, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "lih\t$ra, $imm16",
             [], NoItinerary>;
 def LI32 : AlexPseudo<0, (outs Int32Regs:$ra), (ins simm32:$imm), "",
@@ -502,10 +522,10 @@ def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
 
 /* Global Address/Jump table */
 
-def : Pat<(AlexHi tjumptable:$in), (LIH tjumptable:$in)>;
+def : Pat<(AlexHi tjumptable:$in), (LIh tjumptable:$in)>;
 def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
 def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
-              (ORi Int32Regs:$hi, tjumptable:$lo)>;
+              (ADDiu Int32Regs:$hi, tjumptable:$lo)>;
 
 def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntUnaryOp>;
 class WrapperPat<SDNode node>:
@@ -629,10 +649,10 @@ def : Pat<(i32 addr:$in),
 def : Pat<(i32 immSExt32:$in),
           (LI32 imm:$in)>;
 
-def : Pat<(AlexHi tglobaladdr:$in), (LIH tglobaladdr:$in)>;
+def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
 def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
-          (ORi Int32Regs:$hi, tglobaladdr:$lo)>;
+          (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
 
 def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BNEZ (LT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
@@ -651,6 +671,10 @@ def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BGT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
 def : Pat<(brcc SETULT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BLT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETUGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BGE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+def : Pat<(brcc SETULE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BLE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
 
 def : Pattern<(select Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc),
            [(ADD Int32Regs:$ra, (ADD Int32Regs:$rb, Int32Regs:$rc))]<dag>>;

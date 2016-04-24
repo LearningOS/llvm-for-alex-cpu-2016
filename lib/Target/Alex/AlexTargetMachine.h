@@ -13,73 +13,97 @@
 #define GET_SUBTARGETINFO_HEADER
 #include "AlexGenSubtargetInfo.inc"
 namespace llvm {
-    extern Target TheAlexTarget;
-    class StringRef;
+extern Target TheAlexTarget;
 
-    class AlexTargetMachine;
-    class AlexRegisterInfo;
-    class AlexTargetLowering;
-    class AlexFrameLowering;
-    class AlexRegisterInfo;
+class StringRef;
 
-    class AlexSubtarget : public AlexGenSubtargetInfo {
-    public:
-        AlexSubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
-                   const AlexTargetMachine *_TM);
+class AlexTargetMachine;
 
-        const AlexInstrInfo *getInstrInfo() const override {
-            return instrInfo;
-        }
-        const AlexFrameLowering *getFrameLowering() const override {
-            return FrameLowering;
-        }
-        const AlexRegisterInfo *getRegisterInfo() const override {
-            return registerInfo;
-        }
-        const AlexTargetLowering *getTargetLowering() const override {
-            return targetLowering;
-        }
-        const InstrItineraryData *getInstrItineraryData() const override {
-            return instrItineraryData;
-        }
+class AlexRegisterInfo;
 
-        // generate by td
-        void ParseSubtargetFeatures(StringRef CPU, StringRef FS);
-    private:
-        virtual void anchor() {}
-    protected:
-        Triple targetTriple;
+class AlexTargetLowering;
 
-        const AlexTargetMachine *targetMachine;
-        const AlexInstrInfo *instrInfo;
-        const AlexFrameLowering *FrameLowering;
-        const AlexTargetLowering *targetLowering;
-        const AlexRegisterInfo *registerInfo;
-        InstrItineraryData* instrItineraryData;
-    };
+class AlexFrameLowering;
 
-    class AlexTargetMachine : public LLVMTargetMachine {
+class AlexRegisterInfo;
 
-    public:
-        AlexTargetMachine(const Target &target, const Triple &targetTripple, StringRef cpu,
-                        StringRef fs, const TargetOptions &options,
-                        Reloc::Model RM, CodeModel::Model CM, CodeGenOpt::Level OL);
-        ~AlexTargetMachine() override {}
-        const AlexSubtarget *getSubtargetImpl(const Function &F) const override {
-            return getSubtargetImpl();
-        }
-        // for asm printer
-        const AlexSubtarget *getSubtargetImpl() const {
-            return defaultSubtarget;
-        }
-        TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
-        TargetLoweringObjectFile *getObjFileLowering() const override {
-            return targetLoweringObjectFile;
-        }
-    private:
-        AlexSubtarget* defaultSubtarget;
-        TargetLoweringObjectFile *targetLoweringObjectFile;
-    };
+class SelectionDAGTargetInfo;
+
+class AlexSubtarget : public AlexGenSubtargetInfo {
+public:
+  AlexSubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
+                const AlexTargetMachine *_TM);
+
+  const AlexInstrInfo *getInstrInfo() const override {
+    return instrInfo;
+  }
+
+  const AlexFrameLowering *getFrameLowering() const override {
+    return FrameLowering;
+  }
+
+  const AlexRegisterInfo *getRegisterInfo() const override {
+    return registerInfo;
+  }
+
+  const AlexTargetLowering *getTargetLowering() const override {
+    return targetLowering;
+  }
+
+  const InstrItineraryData *getInstrItineraryData() const override {
+    return instrItineraryData;
+  }
+
+  const SelectionDAGTargetInfo *getSelectionDAGInfo() const override {
+    return TSInfo;
+  }
+
+  // generate by td
+  void ParseSubtargetFeatures(StringRef CPU, StringRef FS);
+
+private:
+  virtual void anchor() { }
+
+protected:
+  Triple targetTriple;
+
+  const AlexTargetMachine *targetMachine;
+  const AlexInstrInfo *instrInfo;
+  const AlexFrameLowering *FrameLowering;
+  const AlexTargetLowering *targetLowering;
+  const AlexRegisterInfo *registerInfo;
+  const SelectionDAGTargetInfo *TSInfo;
+  InstrItineraryData *instrItineraryData;
+};
+
+class AlexTargetMachine : public LLVMTargetMachine {
+
+public:
+  AlexTargetMachine(const Target &target, const Triple &targetTripple, StringRef cpu,
+                    StringRef fs, const TargetOptions &options,
+                    Reloc::Model RM, CodeModel::Model CM, CodeGenOpt::Level OL);
+
+  ~AlexTargetMachine() override { }
+
+  const AlexSubtarget *getSubtargetImpl(const Function &F) const override {
+    return getSubtargetImpl();
+  }
+
+  // for asm printer
+  const AlexSubtarget *getSubtargetImpl() const {
+    return defaultSubtarget;
+  }
+
+  TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
+
+  TargetLoweringObjectFile *getObjFileLowering() const override {
+    return targetLoweringObjectFile;
+  }
+
+private:
+  AlexSubtarget *defaultSubtarget;
+  TargetLoweringObjectFile *targetLoweringObjectFile;
+};
 
 } // end namespace llvm
 

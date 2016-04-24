@@ -210,7 +210,7 @@ private:
                           SmallVectorImpl<SDValue> &InVals,
                           const SDNode *CallNode,
                           const Type *RetTy) const;
-
+  SDValue lowerMulHS(SDValue Op, SelectionDAG &DAG) const;
   void getOpndList(SmallVectorImpl<SDValue> &Ops,
                    std::deque<std::pair<unsigned, SDValue> > &RegsToPass,
                    bool IsPICCall, bool GlobalOrExternal, bool InternalLinkage,
