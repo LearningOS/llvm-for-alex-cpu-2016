@@ -24,12 +24,14 @@
         - 8位/1位整数符号扩展
         - AlexInstrLowering.cpp有一些未翻译的LLVM IR
         - AlexInstrInfo::InsertBranch not implemented
+        - Function Epologue
     - 编译器目标代码生成模块
         - 检查每条指令的二进制代码是否正确
         - ~~opcode > 7位的指令暂时生成错误~~
     - AlexMachine缺少的指令
         - ORi $ra, $rb, imm
         - LBU/LHU $ra, $rb, imm, 无符号(填0)扩展
+        - 将一个寄存器最低位零扩展到32位
     - 不能处理的LLVM IR
         - anyext (貌似可以用clang -O2消除掉这条指令)
 - 长期目标

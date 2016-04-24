@@ -34,8 +34,6 @@ int test_access_global() {
   return fuck;
 }
 
-
-
 int test_recur(int x) {
   if (x <= 0) return 0;
   return test_recur(x-1) + 1;
@@ -102,7 +100,6 @@ int test_return_shit1() {
 int test_quest(int a, int b) {
   return a > b ? a : b;
 }
-
 
 int test_switch(int a, int *ary) {
   switch(a) {
