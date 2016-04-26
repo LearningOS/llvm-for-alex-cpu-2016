@@ -67,23 +67,32 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
         }
         else {
             auto globalAddr = immOprand.getGlobal();
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), reg).addImm(0);
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIh), reg).addImm(0);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), reg).addGlobalAddress(globalAddr, AlexII::MO_ABS_HI);
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIh), reg).addGlobalAddress(globalAddr, AlexII::MO_ABS_LO);
         }
 
         break;
     }
-
+    case Alex::SEXT_INREG_1:
+    case Alex::SEXT_INREG_8:
+    case Alex::SEXT_INREG_16:
+        printf("sext ");
+        for (auto i = 0; i < MI->getNumOperands(); ++i) {
+            printf("%d ", MI->getOperand(i).getType());
+        }
+        printf("\n");
+        break;
+    case Alex::LHa:
+    case Alex::LHs:
+    case Alex::LBs:
+    case Alex::LBa:
+    case Alex::LBITa:
+    case Alex::LBITs:
+    case Alex::LBIT:
+        printf("lbit----------------------------------\n");
+        break;
     case Alex::CALLr:
     case Alex::CALLg:
-        // save t0, t1, t2
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4*5);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T0).addReg(Alex::SP).addImm(4);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T1).addReg(Alex::SP).addImm(8);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T2).addReg(Alex::SP).addImm(12);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T3).addReg(Alex::SP).addImm(16);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(Alex::T4).addReg(Alex::SP).addImm(20);
-
         // call func
         if (MI->getDesc().getOpcode() == Alex::CALLg) {
             // 这里不用备份T0, 由于T0用于返回地址, 此处LLVM会标记T0为LiveIn
@@ -93,31 +102,17 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
         }
         else {
             // temporary restore t0, t1, t2 in case that it uses t0~t2 as call addr
-//            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T0).addReg(Alex::SP).addImm(0);
-//            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T1).addReg(Alex::SP).addImm(4);
-//            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T2).addReg(Alex::SP).addImm(8);
-//            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T2).addReg(Alex::SP).addImm(12);
-//            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T2).addReg(Alex::SP).addImm(16);
-
-            assert((MI->getOperand(0).getType() == MachineOperand::MachineOperandType::MO_Register) &&
+            auto regOperandIndex = MI->getNumOperands();
+            for (unsigned i = 0; i < MI->getNumOperands(); ++i) {
+                if (MI->getOperand(i).getType() == MachineOperand::MachineOperandType::MO_Register) {
+                   // assert(regOperandIndex == MI->getNumOperands() && "call operation with multiple registers!");
+                    regOperandIndex = i;
+                }
+            }
+            assert((regOperandIndex != MI->getNumOperands()) &&
                            "Call operation without a register");
-
-            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addReg(MI->getOperand(0).getReg());
-            //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addReg(MI->getOperand(2).getReg());
-//            printf("call ");
-//            for (auto i = 0; i < MI->getNumOperands(); ++i) {
-//                printf("%d ", MI->getOperand(i).getType());
-//            }
-//            printf("\n");
+            BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addReg(MI->getOperand(regOperandIndex).getReg());
         }
-
-        // restore t0, t1, t2
-        //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T0).addReg(Alex::SP).addImm(0);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T1).addReg(Alex::SP).addImm(4);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T2).addReg(Alex::SP).addImm(8);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T3).addReg(Alex::SP).addImm(12);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), Alex::T4).addReg(Alex::SP).addImm(16);
-//        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4*5);
         break;
     }
 

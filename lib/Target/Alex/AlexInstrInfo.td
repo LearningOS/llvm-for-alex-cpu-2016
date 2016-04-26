@@ -1,44 +1,8 @@
-//===-- AlexInstrFormats.td - Alex Instruction Formats -----*- tablegen -*-===//
-//
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
-//===----------------------------------------------------------------------===//
-
-//===----------------------------------------------------------------------===//
-//  Describe Alex instructions format
-//
-//  CPU INSTRUCTION FORMATS
-//
-//  opcode  - operation code.
-//  ra      - dst reg, only used on 3 regs instr.
-//  rb      - src reg.
-//  rc      - src reg (on a 3 reg instr).
-//  cx      - immediate
-//
-//===----------------------------------------------------------------------===//
-
-// Format specifies the encoding used by the instruction.  This is part of the
-// ad-hoc solution used to emit machine instruction encodings by our machine
-// code emitter.
-class Format<bits<4> val> {
-  bits<4> Value = val;
-}
-
-def Pseudo    : Format<0>;
-def FrmA      : Format<1>;
-def FrmL      : Format<2>;
-def FrmJ      : Format<3>;
-def FrmOther  : Format<4>; // Instruction w/ a custom format
-
 // Generic Alex Format
 class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
-               InstrItinClass itin, Format f>: Instruction
+               InstrItinClass itin>: Instruction
 {
   field bits<32> Inst;
-  Format Form = f;
 
   let Namespace = "Alex";
 
@@ -56,13 +20,8 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
   let Pattern     = pattern;
   let Itinerary   = itin;
 
-  //
-  // Attributes specific to Alex instructions...
-  //
-  bits<4> FormBits = Form.Value;
-
   // TSFlags layout should be kept in sync with AlexInstrInfo.h.
-  let TSFlags{3-0}   = FormBits;
+  //let TSFlags{3-0}   = FormBits;
 
   let DecoderNamespace = "Alex";
 
@@ -70,21 +29,20 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
 }
 
 // Alex Pseudo Instructions Format
-class AlexPseudo<bits<8> opc, dag outs, dag ins, string asmstr, list<dag> pattern>:
-      AlexInst<outs, ins, asmstr, pattern, NoItinerary, Pseudo> {
-  let Opcode = opc;
+class AlexPseudo<dag outs, dag ins, string asmstr, list<dag> pattern>:
+      AlexInst<outs, ins, asmstr, pattern, NoItinerary> {
   let isCodeGenOnly = 1;
   let isPseudo = 1;
 }
 
 class InstrPlain<bits<8> op, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<(outs), (ins), asmstr, pattern, itin, FrmL>
+         InstrItinClass itin>: AlexInst<(outs), (ins), asmstr, pattern, itin>
 {
   let Opcode = op;
   let Inst{23-0} = 0;
 }
 class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
 
@@ -94,7 +52,7 @@ class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{19-0} = 0;
 }
 class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<16> imm16;
@@ -106,7 +64,7 @@ class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{15-0}  = imm16;
 }
 class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<4>  rb;
@@ -118,7 +76,7 @@ class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{15-0}  = 0;
 }
 class InstrRRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<4>  rb;
@@ -131,7 +89,7 @@ class InstrRRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{15-0}  = imm16;
 }
 class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmL>
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<4>  rb;
@@ -146,7 +104,7 @@ class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 }
 
 class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin, FrmJ>
+         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<16> imm;
 
@@ -202,7 +160,7 @@ class AlexInstAlias<string Asm, dag Result, bit Emit = 0b1> :
 //===----------------------------------------------------------------------===//
 
 class AlexAsmPseudoInst<dag outs, dag ins, string asmstr>:
-  AlexInst<outs, ins, asmstr, [], NoItinerary, Pseudo> {
+  AlexInst<outs, ins, asmstr, [], NoItinerary> {
   let isPseudo = 1;
   let Pattern = [];
 }
@@ -239,7 +197,6 @@ def mem : Operand<iPTR> {
   let ParserMatchClass = AlexMemAsmOperand;
 }
 
-
 class LoadImm32< string instr_asm, Operand Od, RegisterClass RC> :
   AlexAsmPseudoInst<(outs RC:$ra), (ins Od:$imm32),
                      !strconcat(instr_asm, "\t$ra, $imm32")> ;
@@ -254,8 +211,6 @@ class LoadAddressImm<string instr_asm, Operand Od, RegisterClass RC> :
   AlexAsmPseudoInst<(outs RC:$ra), (ins Od:$imm32),
                      !strconcat(instr_asm, "\t$ra, $imm32")> ;
 def LoadAddr32Imm : LoadAddressImm<"la", shamt, Int32Regs>;
-
-
 
 def memaddr : Operand<iPTR> {
   let PrintMethod = "printMemAddrOperand";
@@ -280,6 +235,7 @@ def HI16 : SDNodeXForm<imm, [{
 // e.g. addi, andi
 def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
 def immSExt32  : PatLeaf<(imm), [{ return isInt<32>(N->getSExtValue()); }]>;
+//def a
 
 // Node immediate fits as 16-bit zero extended on target immediate.
 // The LO16 param means that only the lower 16 bits of the node
@@ -299,7 +255,7 @@ def immLow16Zero : PatLeaf<(imm), [{
 }]>;
 
 // shamt field must fit in 5 bits.
-def immZExt5 : ImmLeaf<i32, [{return Imm == (Imm & 0x1f);}]>;
+//def immZExt5 : ImmLeaf<i32, [{return Imm == (Imm & 0x1f);}]>;
 
 // Alex Address Mode! SDNode frameindex could possibily be a match
 // since load and store instructions from stack used it.
@@ -331,10 +287,8 @@ def store_a         : AlignedStore<store>;
 def zextloadi16_a   : AlignedLoad<zextloadi16>;
 def extloadi16_a    : AlignedLoad<extloadi16>;
 def truncstorei16_a : AlignedStore<truncstorei16>;
-//===----------------------------------------------------------------------===//
-// Instructions specific format
-//===----------------------------------------------------------------------===//
 
+/* 逻辑算术指令的模板 */
 class ArithLogicRR<bits<8> op, string instr_asm, SDNode OpNode,
                   Operand Od, PatLeaf imm_type, RegisterClass RC> :
   InstrRR<op, (outs Int32Regs:$ra), (ins RC:$rb),
@@ -365,7 +319,7 @@ class CompareRRR<bits<8> op, string instr_asm, PatFrag CmpNode, RegisterClass RC
   let isReMaterializable = 1;
 }
 
-
+/* 内存访问指令模板 */
 class FMem<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
           InstrItinClass itin>: InstrRRI<op, outs, ins, asmstr, pattern, itin> {
   bits<16> addr;
@@ -373,6 +327,7 @@ class FMem<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let DecoderMethod = "DecodeMem";
 }
 
+/* load/store模板 */
 // Memory Load/Store
 let canFoldAsLoad = 1 in
 class LoadM<bits<8> op, string instr_asm, PatFrag OpNode, RegisterClass RC,
@@ -448,21 +403,17 @@ def MULi    : ArithLogicRRI<0x08, "muli",  mul,  simm16, immSExt16, Int32Regs>;
 def MULiu   : ArithLogicRRI<0x09, "muliu", mul,  uimm16, immZExt16, Int32Regs>;
 def DIVi    : ArithLogicRRI<0x0b, "divi",  sdiv, simm16, immSExt16, Int32Regs>;
 def DIViu   : ArithLogicRRI<0x0c, "diviu", udiv, uimm16, immZExt16, Int32Regs>;
-//def ANDi    : ArithLogicRRI<0b0010100, "andi",  and,  uimm16, immZExt16, Int32Regs>;
 
 // 需要ori
-def ORi     : ArithLogicRRI<0xfe, "ori",   or,   uimm16, immZExt16, Int32Regs>;
+def ORi     : ArithLogicRRI<0x42, "ori",   or,   uimm16, immZExt16, Int32Regs>;
 
 def ADD     : ArithLogicRRR<0x01, "add",  add,  Int32Regs>;
-
-//def ADDu    : ArithLogicRRR<0b0000011, "addu", add,  Int32Regs>;
 def SUB     : ArithLogicRRR<0x04, "sub",  sub,  Int32Regs>;
 def MUL     : ArithLogicRRR<0x07, "mul",  mul,  Int32Regs>;
-//def MULu    : ArithLogicRRR<0b0001001, "mulu", mul,  Int32Regs>;
 def DIV     : ArithLogicRRR<0x0a, "div",  sdiv, Int32Regs>;
-//def DIVu    : ArithLogicRRR<0b0001101, "divu", udiv, Int32Regs>;
+def DIVu    : ArithLogicRRR<0xff, "divu", udiv, Int32Regs>;
 def MOD     : ArithLogicRRR<0x0d, "mod",  srem, Int32Regs>;
-//def MODu    : ArithLogicRRR<0b0010001, "modu", urem, Int32Regs>;
+def MODu    : ArithLogicRRR<0xff, "modu", urem, Int32Regs>;
 
 def SHL     : ArithLogicRRR<0x10, "shl", shl, Int32Regs>;
 def SLR     : ArithLogicRRR<0x12, "slr", srl, Int32Regs>;
@@ -481,43 +432,41 @@ def GTU     : CompareRRR<0x1f, "gtu",setugt,Int32Regs>;
 def LE      : CompareRRR<0x20, "le", setle, Int32Regs>;
 def LEU     : CompareRRR<0x21, "leu",setule, Int32Regs>;
 def GE      : CompareRRR<0x22, "ge", setge, Int32Regs>;
-def GEU      : CompareRRR<0x22,"geu",setuge, Int32Regs>;
+def GEU     : CompareRRR<0x22, "geu",setuge, Int32Regs>;
 
 /* 数据传输 */
+/* Load */
 defm LW     : LoadM32<0x2d,  "lw",  load_a>;
-defm LB     : LoadM32<0x2f,  "lb",  sextloadi8>;
-defm LH     : LoadM32<0x2e,  "lh",  extloadi16_a>;
-// lhu 没有
-defm LHu    : LoadM32<0xff,  "lhu", zextloadi16_a>;
-// LBu没有
-defm LBu    : LoadM32<0xfd,  "lbu", zextloadi8>;
+defm LB     : LoadM32<0x2f,  "lb",  zextloadi8>;
+defm LH     : LoadM32<0x2e,  "lh",  zextloadi16_a>;
+
+// 下面的load都是伪指令了
+defm LHs    : LoadM32<0xff,  "lhs", sextloadi16, 1>;
+defm LHa    : LoadM32<0xff,  "lha", extloadi16, 1>;
+defm LBs    : LoadM32<0xfd,  "lbs", sextloadi8, 1>;
+defm LBa    : LoadM32<0xfd,  "lba", extloadi8, 1>;
+defm LBIT   : LoadM32<0xfd,  "lbit", zextloadi1, 1>;
+defm LBITs  : LoadM32<0xfd,  "lbits", sextloadi1, 1>;
+defm LBITa  : LoadM32<0xfd,  "lbita", extloadi1, 1>;
+
+/* Save */
 defm SW     : StoreM32<0x34, "sw",  store_a>;
 defm SB     : StoreM32<0x36, "sb",  truncstorei8>;
 defm SH     : StoreM32<0x08, "sh",  truncstorei16_a>;
 
-// use addi
+// lea伪指令
 defm LEAW   : LeaM32<0x02, "addi">;
 
+/* Load Immediate */
 def LI      : InstrRI<0x31, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "li\t$ra, $imm16",
             [(set Int32Regs:$ra, (i32 immSExt16:$imm16))], NoItinerary>;
 def LIh     : InstrRI<0x33, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "lih\t$ra, $imm16",
             [], NoItinerary>;
-def LI32 : AlexPseudo<0, (outs Int32Regs:$ra), (ins simm32:$imm), "",
-    [(set Int32Regs:$ra, (AlexLI32 immSExt32:$imm))]>;
-/*
-def PUSH    : InstrR<0b1111001, (outs), (ins Int32Regs:$ra), "push\t$ra",
-            [(AlexPush Int32Regs:$ra)], NoItinerary>;
-def POP     : InstrR<0b1111010, (outs Int32Regs:$ra), (ins), "pop\t$ra",
-            [(set Int32Regs:$ra, (AlexPop))], NoItinerary>;
-
-def MTRA    : InstrRI<0b1111101, (outs), (ins Int32Regs:$ra, simm16:$imm16),
-            "mtra\t$imm16($ra)", [], NoItinerary>;
-def MFRA    : InstrR<0b1111110, (outs Int32Regs:$ra), (ins),
-            "mfra\t$ra", [], NoItinerary>;
-*/
-def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
+// load immediate 32 伪指令
+def LI32    : AlexPseudo<(outs Int32Regs:$ra), (ins simm32:$imm), "li32",
+            [(set Int32Regs:$ra, (AlexLI32 immSExt32:$imm))]>;
 
 
 /* Global Address/Jump table */
@@ -536,23 +485,12 @@ def : WrapperPat<tglobaladdr>;
 def : WrapperPat<tjumptable>;
 
 /* 分支语句 */
-//def JR      : JumpFR<0b1011111, "jr", Int32Regs>;
-//def JRRA    : InstrR<0b1100010, (outs), (ins Int32Regs:$ra), "jrra\t$ra", [], NoItinerary>;
 
+/* Return Pseudo */
 let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
-    def RetLR : AlexPseudo<123, (outs), (ins), "", [(AlexRet)]>;
-
+    def RetLR : AlexPseudo<(outs), (ins), "", [(AlexRet)]>;
 def RETB     : RetBase<Int32Regs>;
-
-class CBranch24<bits<8> op, string instr_asm, RegisterClass RC,
-                   list<Register> UseRegs>:
-  InstrI<op, (outs), (ins RC:$ra, bb:$imm16),
-             !strconcat(instr_asm, "\t$ra, $imm16"),
-             [], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let hasDelaySlot = 1;
-}
+def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
 
 def brtarget16    : Operand<OtherVT> {
   let EncoderMethod = "getBranch16TargetOpValue";
@@ -560,11 +498,17 @@ def brtarget16    : Operand<OtherVT> {
   let DecoderMethod = "DecodeBranch16Target";
 }
 let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
-
 def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
           "bnz\t$ra, $imm16",
           [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
+def BE  : InstrRRI<0x25, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
+        "be\t$ra, $rb, $imm16",
+         [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
+
 /* BNEZ 这里指令有冲突, ra rb可能为0 和bne分不开*/
+def BNE : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
+        "bne\t$ra, $rb, $imm16",
+         [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
 def BNEZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
         "bnez\t$ra, $imm16",
          [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
@@ -574,27 +518,12 @@ def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$
 def BGT : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "bgt\t$ra, $rb, $imm16",
          [(brcond (i32 (setgt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-def BLE : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bgt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-def BGE : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bgt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-def BEQ : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bgt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-def BNE : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bgt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-
 }
 
+/* 无条件跳转 */
 def jmptarget  : Operand<OtherVT> {
   let EncoderMethod = "getBranch16TargetOpValue";
   let OperandType = "OPERAND_PCREL";
-}
-def calltarget  : Operand<iPTR> {
-  let EncoderMethod = "getJumpTargetOpValue";
 }
 
 def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
@@ -605,26 +534,30 @@ def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
   let hasDelaySlot = 1;
 }
 
+/* 函数调用 */
+def calltarget  : Operand<iPTR> {
+  let EncoderMethod = "getJumpTargetOpValue";
+}
 def SDT_AlexCallLink      : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
 def AlexCallLink : SDNode<"AlexISD::JmpLink",SDT_AlexCallLink,
                          [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue,
                           SDNPVariadic]>;
-
+/* 真正的函数调用指令(只能寄存器寻址) */
 let isCall=1, hasDelaySlot=1 in {
   class CallLinkReg<bits<8> op, string instr_asm,
                     RegisterClass RC>:
     InstrR<op, (outs), (ins RC:$ra, variable_ops),
-       !strconcat(instr_asm, "\t$ra"), [/*(AlexCallLink RC:$ra)*/], NoItinerary>;
+       !strconcat(instr_asm, "\t$ra"), [], NoItinerary>;
 }
-
 def CALL    : CallLinkReg<0x2b, "call", Int32Regs>;
 
 let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in {
-    def CALLg : AlexPseudo<0, (outs), (ins calltarget:$imm16), "",
+    def CALLg : AlexPseudo<(outs), (ins calltarget:$imm16), "",
                 [(AlexCallLink (i32 tglobaladdr:$imm16))]>;
-    def CALLr : AlexPseudo<0, (outs), (ins Int32Regs:$ra), "",
+    def CALLr : AlexPseudo<(outs), (ins Int32Regs:$ra), "",
                 [(AlexCallLink Int32Regs:$ra)]>;
 }
+
 
 def SDT_AlexCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>]>;
 def SDT_AlexCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>, SDTCisVT<1, i32>]>;
@@ -633,27 +566,29 @@ def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_AlexCallSeqStart,
 def callseq_end   : SDNode<"ISD::CALLSEQ_END", SDT_AlexCallSeqEnd,
                            [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
 
-def ADJCALLSTACKDOWN : AlexPseudo<124, (outs), (ins uimm16:$amt),
+def ADJCALLSTACKDOWN : AlexPseudo<(outs), (ins uimm16:$amt),
                                   "!ADJCALLSTACKDOWN $amt",
                                   [(callseq_start timm:$amt)]>;
-def ADJCALLSTACKUP   : AlexPseudo<125, (outs), (ins uimm16:$amt1, uimm16:$amt2),
+def ADJCALLSTACKUP   : AlexPseudo<(outs), (ins uimm16:$amt1, uimm16:$amt2),
                                   "!ADJCALLSTACKUP $amt1",
                                   [(callseq_end timm:$amt1, timm:$amt2)]>;
 
 // 模式匹配
+/* 16/32位整数加载的直接翻译 */
 def : Pat<(i32 immSExt16:$in),
           (LI imm:$in)>;
 def : Pat<(i32 addr:$in),
           (LW mem:$in)>;
-
 def : Pat<(i32 immSExt32:$in),
           (LI32 imm:$in)>;
 
+/* Hi/Lo的加载的直接翻译 */
 def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
 def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
           (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
 
+/* 普通有符号比较的分支指令的直接翻译 */
 def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BNEZ (LT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
@@ -661,25 +596,40 @@ def : Pat<(brcc SETGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
 def : Pat<(brcc SETLE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BNEZ (LE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BGE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+          (BNEZ (GE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETEQ, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BEQ Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+          (BNEZ (EQ Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 def : Pat<(brcc SETNE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
-/* 无符号指令 */
-def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BGT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
-def : Pat<(brcc SETULT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BLT Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
-def : Pat<(brcc SETUGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BGE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
-def : Pat<(brcc SETULE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BLE Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16)>;
+          (BNEZ (NE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 
+/* 无符号分支指令的直接翻译 */
+def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BNEZ (GTU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+def : Pat<(brcc SETULT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BNEZ (LTU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+def : Pat<(brcc SETUGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BNEZ (GEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+def : Pat<(brcc SETULE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+          (BNEZ (LEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+
+/* "?:"操作符会生成select指令 */
 def : Pattern<(select Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc),
            [(ADD Int32Regs:$ra, (ADD Int32Regs:$rb, Int32Regs:$rc))]<dag>>;
 
+/* 多种加法的直接翻译 */
 def : Pat<(adde Int32Regs:$ra, immSExt16:$imm),
           (ADDi Int32Regs:$ra, simm16:$imm)>;
 def : Pat<(addc Int32Regs:$ra, immSExt16:$imm),
           (ADDi Int32Regs:$ra, simm16:$imm)>;
+
+/* 符号扩展伪指令 */
+def SEXT_INREG_1  : AlexPseudo<(outs Int32Regs:$rb), (ins Int32Regs:$ra), "sext_inreg\t$rb, $ra, 1",
+        [(set Int32Regs:$rb, (sext_inreg Int32Regs:$ra, i1))]>;
+def SEXT_INREG_8  : AlexPseudo<(outs Int32Regs:$rb), (ins Int32Regs:$ra), "sext_inreg\t$rb, $ra, 8",
+        [(set Int32Regs:$rb, (sext_inreg Int32Regs:$ra, i8))]>;
+def SEXT_INREG_16  : AlexPseudo<(outs Int32Regs:$rb), (ins Int32Regs:$ra), "sext_inreg\t$rb, $ra, 16",
+        [(set Int32Regs:$rb, (sext_inreg Int32Regs:$ra, i16))]>;
+
+/* MULHS的错误版本.. */
+def MULhu     : ArithLogicRRR<0x07, "mulhu",  mulhu,  Int32Regs>;
+def MULhs     : ArithLogicRRR<0x07, "mulhs",  mulhs,  Int32Regs>;

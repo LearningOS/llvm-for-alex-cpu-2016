@@ -77,13 +77,17 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
     setSelectIsExpensive(true);
 
     /* Unimplemented instructions */
-    setOperationAction(ISD::MULHS, MVT::i32, Custom);
+    //setOperationAction(ISD::MULHS, MVT::i32, Custom);
     setOperationAction(ISD::SMUL_LOHI, MVT::i32, Expand);
-    setLoadExtAction(ISD::EXTLOAD, MVT::i32, MVT::i1, Custom);
-    setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i1, Custom);
-    setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i8, Custom);
-    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8, Expand);
-    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i32, Expand);
+    //setLoadExtAction(ISD::EXTLOAD, MVT::i32, MVT::i1, Custom);
+    //setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i1, Custom);
+   // setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i8, Custom);
+    //setLoadExtAction(ISD::SEXTLOAD, MVT::i32, MVT::i16, Custom);
+    //setLoadExtAction(ISD::ZEXTLOAD, MVT::i32, MVT::i16, Custom);
+    //setLoadExtAction(ISD::EXTLOAD, MVT::i32, MVT::i16, Custom);
+    //setOperationAction(ISD::ANY_EXTEND, MVT::iAny, Expand);
+    //setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::Any, Custom);
+
 
     // Support va_arg(): variable numbers (not fixed numbers) of arguments
     //  (parameters) for function all
@@ -108,8 +112,9 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
     case ISD::GlobalAddress:      return lowerGlobalAddress(Op, DAG);
     case ISD::BlockAddress:       return lowerBlockAddress(Op, DAG);
     case ISD::JumpTable:          return lowerJumpTable(Op, DAG);
-    case ISD::MULHS:
     case ISD::SIGN_EXTEND_INREG:
+        printf("sign extend in reg\n");
+        break;
     case ISD::ANY_EXTEND:
     case ISD::LOAD:
     case ISD::SMUL_LOHI:
