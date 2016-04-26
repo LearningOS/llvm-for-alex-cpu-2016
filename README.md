@@ -45,8 +45,25 @@
             - ~~lhs~~
             - ~~sext_inreg~~
                 - 所有符号扩展指令用shl/sar实现
-            - lw/sw
-            - select
+            - mov $ra, $rb
+                - push $ra
+                - pop $rb
+            - add $ra, $rb, $rc
+                - push RA
+                - push RB
+                - mov RA, $rb
+                - mov RB, $rc
+                - add
+                - mov $ra, RA
+                - pop RA
+                - pop RB
+            - lw
+            - sw
+            - call
+            - ret
+            - ~~select~~
+                - r = trueReg * condition + falseReg * !condition
+
         - 减少通用寄存器的个数
         - 去掉fp
     - 汇编器: 完成v0.1, 未测试

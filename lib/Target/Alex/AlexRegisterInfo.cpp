@@ -16,8 +16,8 @@ AlexRegisterInfo::AlexRegisterInfo(const AlexSubtarget *subtarget)
         :AlexGenRegisterInfo(Alex::LR /* RA */), subtarget(subtarget) {}
 
 unsigned AlexRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
-    return Alex::FP;
-    //return Alex::SP;
+    //return Alex::FP;
+    return Alex::SP;
 }
 
 const MCPhysReg *AlexRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
@@ -85,7 +85,8 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
     // getFrameRegister() returns.
     unsigned FrameReg;
 
-    FrameReg = Alex::FP;
+    //FrameReg = Alex::FP;
+    FrameReg = Alex::SP;
 
     // Calculate final offset.
     // - There is no need to change the offset if the frame object is one of the

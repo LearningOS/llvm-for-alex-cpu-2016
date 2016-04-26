@@ -306,11 +306,12 @@ class ArithLogicRRI<bits<8> op, string instr_asm, SDNode OpNode,
   let isReMaterializable = 1;
 }
 
-class ArithLogicRRR<bits<8> op, string instr_asm, SDNode OpNode, RegisterClass RC> :
+class ArithLogicRRR<bits<8> op, string instr_asm, SDNode OpNode, RegisterClass RC, bits<1> Pseudo = 0> :
   InstrRRR<op, (outs Int32Regs:$ra), (ins RC:$rb, RC:$rc),
      !strconcat(instr_asm, "\t$ra, $rb, $rc"),
      [(set Int32Regs:$ra, (OpNode RC:$rb, RC:$rc))], NoItinerary> {
   let isReMaterializable = 1;
+  let isPseudo = Pseudo;
 }
 class CompareRRR<bits<8> op, string instr_asm, PatFrag CmpNode, RegisterClass RC> :
   InstrRRR<op, (outs Int32Regs:$ra), (ins RC:$rb, RC:$rc),
@@ -410,7 +411,7 @@ def ORi     : ArithLogicRRI<0x42, "ori",   or,   uimm16, immZExt16, Int32Regs>;
 def ADD     : ArithLogicRRR<0x01, "add",  add,  Int32Regs>;
 def SUB     : ArithLogicRRR<0x04, "sub",  sub,  Int32Regs>;
 def MUL     : ArithLogicRRR<0x07, "mul",  mul,  Int32Regs>;
-def DIV     : ArithLogicRRR<0x0a, "div",  sdiv, Int32Regs>;
+def DIV     : ArithLogicRRR<0x0a, "div",  sdiv, Int32Regs, 1>;
 def DIVu    : ArithLogicRRR<0xff, "divu", udiv, Int32Regs>;
 def MOD     : ArithLogicRRR<0x0d, "mod",  srem, Int32Regs>;
 def MODu    : ArithLogicRRR<0xff, "modu", urem, Int32Regs>;
@@ -633,3 +634,12 @@ def SEXT_INREG_16  : AlexPseudo<(outs Int32Regs:$rb), (ins Int32Regs:$ra), "sext
 /* MULHS的错误版本.. */
 def MULhu     : ArithLogicRRR<0x07, "mulhu",  mulhu,  Int32Regs>;
 def MULhs     : ArithLogicRRR<0x07, "mulhs",  mulhs,  Int32Regs>;
+
+/* V9Cpu的一些指令 */
+def PUSHr     : InstrR<0xFF, (outs), (ins Int32Regs:$ra), "pushr\t$ra", [], NoItinerary>;
+def POPr      : InstrR<0xFF, (outs Int32Regs:$ra), (ins), "popr\t$ra", [], NoItinerary>;
+def MOVrr     : InstrRR<0xFF, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "movrr\t$ra, $rb", [], NoItinerary>;
+def ADDa      : InstrPlain<0xFF, "adda", [], NoItinerary>;
+def SUBa      : InstrPlain<0xFF, "suba", [], NoItinerary>;
+def MULa      : InstrPlain<0xFF, "mula", [], NoItinerary>;
+def DIVa      : InstrPlain<0xFF, "diva", [], NoItinerary>;

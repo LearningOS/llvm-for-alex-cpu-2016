@@ -51,7 +51,7 @@ void AlexInstrInfo::expandRetLR(MachineBasicBlock &MBB,
 bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 //@expandPostRAPseudo-body
     MachineBasicBlock &MBB = *MI->getParent();
-
+    bool ret = true;
     switch(MI->getDesc().getOpcode()) {
     default:
         return false;
@@ -78,7 +78,7 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
     case Alex::SEXT_INREG_1:
     case Alex::SEXT_INREG_8:
     case Alex::SEXT_INREG_16:
-        lowerSExtPseudo(MI);
+        ret = lowerSExtPseudo(MI);
         break;
 
     case Alex::LHa:
@@ -88,21 +88,29 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
     case Alex::LBITa:
     case Alex::LBITs:
     case Alex::LBIT:
-        lowerLoadExtendPseudo(MI);
+        ret = lowerLoadExtendPseudo(MI);
         break;
 
     case Alex::CALLr:
     case Alex::CALLg:
-        lowerCallPseudo(MI);
+        ret = lowerCallPseudo(MI);
         break;
 
     case Alex::SELECT:
-        lowerSelect(MI);
+        ret = lowerSelect(MI);
+        break;
+
+    case Alex::ADD:
+    case Alex::SUB:
+    case Alex::MUL:
+    case Alex::DIV:
+        ret = lowerArithLogicRRR(MI);
+        printf("lower add %d-----------------------------\n", ret);
         break;
     }
 
     MBB.erase(MI);
-    return true;
+    return ret;
 }
 
 void AlexInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
@@ -325,4 +333,37 @@ bool AlexInstrInfo::lowerSelect(MachineBasicBlock::iterator &MI) const {
     return true;
 }
 
+bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI) const {
+    auto &MBB = *MI->getParent();
+    auto resultReg = MI->getOperand(0).getReg();
+    auto lhsReg = MI->getOperand(1).getReg();
+    auto rhsReg = MI->getOperand(2).getReg();
 
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Alex::S0);
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Alex::S1);
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MOVrr), Alex::S0).addReg(lhsReg);
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MOVrr), Alex::S1).addReg(rhsReg);
+
+    switch(MI->getDesc().getOpcode()) {
+    default:
+        return false;
+    case Alex::ADD:
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDa));
+        break;
+    case Alex::SUB:
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SUBa));
+        break;
+    case Alex::MUL:
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MULa));
+        break;
+    case Alex::DIV:
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::DIVa));
+        break;
+    }
+
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MOVrr), resultReg).addReg(Alex::S0);
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::POPr)).addReg(Alex::S1);
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::POPr)).addReg(Alex::S0);
+
+    return true;
+}

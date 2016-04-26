@@ -47,6 +47,7 @@ namespace llvm {
     bool lowerLoadExtendPseudo(MachineBasicBlock::iterator &MI) const;
     bool lowerSExtPseudo(MachineBasicBlock::iterator &MI) const;
     bool lowerSelect(MachineBasicBlock::iterator &MI) const;
+    bool lowerArithLogicRRR(MachineBasicBlock::iterator &MI) const;
   };
 }
 

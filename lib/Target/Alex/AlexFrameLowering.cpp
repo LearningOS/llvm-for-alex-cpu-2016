@@ -49,12 +49,12 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
     auto RC = &Alex::Int32RegsRegClass;
 
     // push $fp
-    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
-    BuildMI(MBB, MBBI, dl, TII.get(Alex::SW)).addReg(Alex::FP).addReg(Alex::SP).addImm(0);
+    //BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
+    //BuildMI(MBB, MBBI, dl, TII.get(Alex::SW)).addReg(Alex::FP).addReg(Alex::SP).addImm(0);
 
     // move $sp, $fp
-    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi)).addReg(Alex::FP).addReg(SP).addImm(0)
-            .setMIFlag(MachineInstr::FrameSetup);
+    //BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi)).addReg(Alex::FP).addReg(SP).addImm(0)
+    //        .setMIFlag(MachineInstr::FrameSetup);
 
     // First, compute final stack size.
     uint64_t StackSize = MFI->getStackSize();
@@ -124,8 +124,8 @@ void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB
     TII.adjustStackPtr(SP, StackSize, MBB, MBBI);
 
     // restore fp
-    BuildMI(MBB, MBBI, dl, TII.get(Alex::LW), Alex::FP).addReg(Alex::SP).addImm(0);
-    BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
+    //BuildMI(MBB, MBBI, dl, TII.get(Alex::LW), Alex::FP).addReg(Alex::SP).addImm(0);
+    //BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
 }
 
 bool AlexFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,

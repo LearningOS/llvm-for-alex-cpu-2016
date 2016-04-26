@@ -18,7 +18,8 @@ namespace llvm {
                               MachineBasicBlock &MBB) const override;
 
     bool hasFP(const MachineFunction &MF) const override {
-        return true;
+      //return true;
+      return false;
     }
     void determineCalleeSaves(MachineFunction &MF,
                                                  BitVector &SavedRegs,
