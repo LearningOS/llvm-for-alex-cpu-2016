@@ -126,7 +126,6 @@ void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB
     // restore fp
     BuildMI(MBB, MBBI, dl, TII.get(Alex::LW), Alex::FP).addReg(Alex::SP).addImm(0);
     BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
-    //BuildMI(MBB, MBBI, dl, TII.get(Alex::MTRA)).addReg(Alex::SP).addImm(0);
 }
 
 bool AlexFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,

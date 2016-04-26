@@ -25,5 +25,5 @@ let Namespace = "Alex" in {
   def LR     : AlexAllReg<14,  "sp">,     DwarfRegNum<[15]>;
 }
 
-def Int32Regs   : RegisterClass<"Alex", [i32], 32, (add T0, T1, T2, T3, T4, S0, S1, FP, SP)>;
+def Int32Regs   : RegisterClass<"Alex", [i32], 32, (add T0, T1, T2, S0, S1, FP, SP)>;
 def NonSpecialRegs: RegisterClass<"Alex", [i32], 32, (add T1, T2, S0, S1)>;

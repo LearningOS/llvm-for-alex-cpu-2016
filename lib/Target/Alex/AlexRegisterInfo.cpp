@@ -17,6 +17,7 @@ AlexRegisterInfo::AlexRegisterInfo(const AlexSubtarget *subtarget)
 
 unsigned AlexRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
     return Alex::FP;
+    //return Alex::SP;
 }
 
 const MCPhysReg *AlexRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {

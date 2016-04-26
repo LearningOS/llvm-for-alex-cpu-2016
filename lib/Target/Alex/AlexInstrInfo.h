@@ -19,7 +19,6 @@ namespace llvm {
   public:
     explicit AlexInstrInfo(const AlexSubtarget *);
 
-    unsigned GetInstSizeInBytes(const MachineInstr *MI) const;
     MachineMemOperand *GetMemOperand(MachineBasicBlock &MBB, int FI,
                                                     unsigned Flag) const;
 
@@ -43,6 +42,11 @@ namespace llvm {
       return 0;
     }
 
+  private:
+    bool lowerCallPseudo(MachineBasicBlock::iterator &MI) const;
+    bool lowerLoadExtendPseudo(MachineBasicBlock::iterator &MI) const;
+    bool lowerSExtPseudo(MachineBasicBlock::iterator &MI) const;
+    bool lowerSelect(MachineBasicBlock::iterator &MI) const;
   };
 }
 

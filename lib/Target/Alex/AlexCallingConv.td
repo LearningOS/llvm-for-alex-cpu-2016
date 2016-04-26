@@ -8,5 +8,5 @@ def RetCC_Alex : CallingConv<[
   CCIfType<[i32], CCAssignToReg<[T0, T1]>>
 ]>;
 
-def CSR_CalleeSavedRegs : CalleeSavedRegs<(add S0, S1, S2, S3, S4)>;
-//def CSR_CallerSavedRegs : CallerSavedRegs<(add T0, T1, T2, T3, T4)>;
+def CSR_CalleeSavedRegs : CalleeSavedRegs<(add S0, S1)>;
+//def CSR_CallerSavedRegs : CallerSavedRegs<(add T0, T1, T2)>;

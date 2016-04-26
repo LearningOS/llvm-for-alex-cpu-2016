@@ -505,7 +505,6 @@ def BE  : InstrRRI<0x25, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$
         "be\t$ra, $rb, $imm16",
          [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
 
-/* BNEZ 这里指令有冲突, ra rb可能为0 和bne分不开*/
 def BNE : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
         "bne\t$ra, $rb, $imm16",
          [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
@@ -557,7 +556,6 @@ let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in {
     def CALLr : AlexPseudo<(outs), (ins Int32Regs:$ra), "",
                 [(AlexCallLink Int32Regs:$ra)]>;
 }
-
 
 def SDT_AlexCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>]>;
 def SDT_AlexCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>, SDTCisVT<1, i32>]>;
@@ -613,8 +611,10 @@ def : Pat<(brcc SETULE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
           (BNEZ (LEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 
 /* "?:"操作符会生成select指令 */
-def : Pattern<(select Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc),
-           [(ADD Int32Regs:$ra, (ADD Int32Regs:$rb, Int32Regs:$rc))]<dag>>;
+def SELECT : AlexPseudo<(outs Int32Regs:$rv),
+                        (ins Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc),
+                        "select",
+                        [(set Int32Regs:$rv, (select Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc))]>;
 
 /* 多种加法的直接翻译 */
 def : Pat<(adde Int32Regs:$ra, immSExt16:$imm),
