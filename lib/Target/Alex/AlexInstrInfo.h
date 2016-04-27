@@ -28,7 +28,7 @@ namespace llvm {
     void storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                             unsigned SrcReg, bool isKill, int FI,
                             const TargetRegisterClass *RC, const TargetRegisterInfo *TRI) const override;
-    void loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
+    void loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
                               unsigned DestReg, int FI, const TargetRegisterClass *RC,
                               const TargetRegisterInfo *TRI) const override;
     void copyPhysReg(MachineBasicBlock &MBB,
@@ -46,13 +46,19 @@ namespace llvm {
     bool lowerCallPseudo(MachineBasicBlock::iterator &MI) const;
     bool lowerLoadExtendPseudo(MachineBasicBlock::iterator &MI) const;
     bool lowerSExtPseudo(MachineBasicBlock::iterator &MI) const;
+
     bool lowerSelect(MachineBasicBlock::iterator &MI) const;
     bool lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned Opcode) const;
 
     bool lowerV9Cmp(MachineBasicBlock::iterator &MI, unsigned Opcode) const;
+    bool lowerV9Branch(MachineBasicBlock::iterator &MI, unsigned Opcode) const;
+    bool lowerAbsoluteCall(MachineBasicBlock::iterator &MI, unsigned Reg) const;
+
+    bool lowerLoadFI(MachineBasicBlock::iterator &MI, int16_t FI, unsigned Reg) const;
 
     bool lowerPush(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerPop(MachineBasicBlock::iterator &MI, unsigned Reg) const;
+    bool lowerMov(MachineBasicBlock::iterator &MI, unsigned Dest, unsigned Src) const;
   };
 }
 

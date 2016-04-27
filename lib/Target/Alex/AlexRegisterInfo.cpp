@@ -28,6 +28,12 @@ const uint32_t *AlexRegisterInfo::getCallPreservedMask(const MachineFunction &MF
 }
 BitVector AlexRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     BitVector Reserved(getNumRegs());
+    Reserved.set(Alex::T1);
+    Reserved.set(Alex::T2);
+    Reserved.set(Alex::T3);
+    Reserved.set(Alex::T4);
+    Reserved.set(Alex::S3);
+    Reserved.set(Alex::S4);
     Reserved.set(Alex::SP);
     Reserved.set(Alex::FP);
     Reserved.set(Alex::R0);

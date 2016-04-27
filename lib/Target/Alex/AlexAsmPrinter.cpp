@@ -314,14 +314,8 @@ void AlexAsmPrinter::printOperand(const MachineInstr *MI, int opNum,
         closeP = true;
 
     switch(MO.getTargetFlags()) {
-    case AlexII::MO_GPREL:    O << "%gp_rel("; break;
-    case AlexII::MO_GOT_CALL: O << "%call16("; break;
-    case AlexII::MO_GOT16:    O << "%got16(";  break;
-    case AlexII::MO_GOT:      O << "%got(";    break;
     case AlexII::MO_ABS_HI:   O << "%hi(";     break;
     case AlexII::MO_ABS_LO:   O << "%lo(";     break;
-    case AlexII::MO_GOT_HI16: O << "%got_hi16("; break;
-    case AlexII::MO_GOT_LO16: O << "%got_lo16("; break;
     }
 
     switch (MO.getType()) {

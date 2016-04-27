@@ -45,7 +45,7 @@
             - ~~lhs~~
             - ~~sext_inreg~~
                 - 所有符号扩展指令用shl/sar实现
-            - mov $ra, $rb
+            - ~~mov $ra, $rb~~
                 - push $ra
                 - pop $rb
             - ~~add $ra, $rb, $rc~~(所有算数逻辑指令)
@@ -57,18 +57,39 @@
                 - mov $ra, RA
                 - pop RA
                 - pop RB
-            - lw
-            - sw
-            - call
-            - ret
+            - addiu $ra, $rb, imm
+            - ~~lw $ra, SP, imm~~
+                - push RA
+                - mov RA, $ra
+                - ll imm
+                - mov $ra, RA
+                - pop RA
+            - sw SP, imm, $ra
+                - push RA
+                - mov RA, $ra
+                - sl imm
+                - pop RA
+            - 普通function call
+                - ent 建立堆栈
+                - jsr 调用函数
+                - lev 返回
+            - 函数指针调用: call $ra
+                - push RA (used to store return address)
+                - push $ra (used to store function address)
+                - push RA (used to backup RA)
+                - leag x
+                - load RA, SP\[0\]
+                - pop $ra
+                - LEV
             - ~~le, ge, ble, bge~~, 以及他们的无符号指令
-            - j, jr
-                - jsra
+            - ~~j~~
+                - jmp
             - ~~select~~
                 - r = trueReg * condition + falseReg * !condition
-
+        - 16bit操作数改为24bit
         - 减少通用寄存器的个数
-        - 去掉fp
+        - ~~去掉fp~~
+        - 解决编译警告
     - 汇编器: 完成v0.1, 未测试
     - 内联汇编: 完成v0.1, 未测试
         - 可能的问题:

@@ -44,7 +44,6 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
         case Alex::fixup_Alex_LO16:
             break;
         case Alex::fixup_Alex_HI16:
-        case Alex::fixup_Alex_GOT_Local:
             // Get the higher 16-bits. Also add 1 if bit 15 is 1.
             Value = (Value >> 16) & 0xffff;
             break;
@@ -116,11 +115,6 @@ getFixupKindInfo(MCFixupKind Kind) const {
             { "fixup_Alex_32",             0,     32,   0 },
             { "fixup_Alex_HI16",           0,     16,   0 },
             { "fixup_Alex_LO16",           0,     16,   0 },
-            { "fixup_Alex_GPREL16",        0,     16,   0 },
-            { "fixup_Alex_GOT_Global",     0,     16,   0 },
-            { "fixup_Alex_GOT_Local",      0,     16,   0 },
-            { "fixup_Alex_GOT_HI16",       0,     16,   0 },
-            { "fixup_Alex_GOT_LO16",       0,     16,   0 }
     };
 
     if (Kind < FirstTargetFixupKind)

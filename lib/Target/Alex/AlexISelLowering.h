@@ -44,13 +44,14 @@ enum NodeType {
           DivRem,
   DivRemU,
 
-  Wrapper,
+  GlobalWrapper,
   DynAlloc,
 
   Sync,
   Push,
   Pop,
-  LI32
+  LI32,
+  PCRel,
 };
 }
 

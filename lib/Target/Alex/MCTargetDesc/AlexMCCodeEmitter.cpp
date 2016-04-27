@@ -141,13 +141,14 @@ getExprOpValue(const MCExpr *Expr,SmallVectorImpl<MCFixup> &Fixups,
 
         Alex::Fixups FixupKind = Alex::Fixups(0);
         switch (AlexExpr->getKind()) {
-            default: llvm_unreachable("Unsupported fixup kind for target expression!");
-            case AlexMCExpr::VK_Alex_HI:
-                FixupKind = Alex::fixup_Alex_HI16;
-                break;
-            case AlexMCExpr::VK_Alex_LO:
-                FixupKind = Alex::fixup_Alex_LO16;
-                break;
+        default:
+            llvm_unreachable("Unsupported fixup kind for target expression!");
+        case AlexMCExpr::VK_Alex_HI:
+            FixupKind = Alex::fixup_Alex_HI16;
+            break;
+        case AlexMCExpr::VK_Alex_LO:
+            FixupKind = Alex::fixup_Alex_LO16;
+            break;
         }
         Fixups.push_back(MCFixup::create(0, AlexExpr, MCFixupKind(FixupKind)));
         return 0;

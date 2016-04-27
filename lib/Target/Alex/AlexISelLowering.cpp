@@ -40,20 +40,36 @@ addLiveIn(MachineFunction &MF, unsigned PReg, const TargetRegisterClass *RC)
 
 const char *AlexTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch (Opcode) {
-        case AlexISD::JmpLink:           return "AlexISD::JmpLink";
-        case AlexISD::TailCall:          return "AlexISD::TailCall";
-        case AlexISD::Hi:                return "AlexISD::Hi";
-        case AlexISD::Lo:                return "AlexISD::Lo";
-        case AlexISD::GPRel:             return "AlexISD::GPRel";
-        case AlexISD::Ret:               return "AlexISD::Ret";
-        case AlexISD::EH_RETURN:         return "AlexISD::EH_RETURN";
-        case AlexISD::DivRem:            return "AlexISD::DivRem";
-        case AlexISD::DivRemU:           return "AlexISD::DivRemU";
-        case AlexISD::Wrapper:           return "AlexISD::Wrapper";
-        case AlexISD::Push:              return "AlexISD::Push";
-        case AlexISD::Pop:               return "AlexISD::Pop";
-        case AlexISD::LI32:              return "AlexISD::LI32";
-        default:                         return NULL;
+    case AlexISD::JmpLink:
+        return "AlexISD::JmpLink";
+    case AlexISD::TailCall:
+        return "AlexISD::TailCall";
+    case AlexISD::Hi:
+        return "AlexISD::Hi";
+    case AlexISD::Lo:
+        return "AlexISD::Lo";
+    case AlexISD::GPRel:
+        return "AlexISD::GPRel";
+    case AlexISD::Ret:
+        return "AlexISD::Ret";
+    case AlexISD::EH_RETURN:
+        return "AlexISD::EH_RETURN";
+    case AlexISD::DivRem:
+        return "AlexISD::DivRem";
+    case AlexISD::DivRemU:
+        return "AlexISD::DivRemU";
+    case AlexISD::GlobalWrapper:
+        return "AlexISD::GlobalWrapper";
+    case AlexISD::Push:
+        return "AlexISD::Push";
+    case AlexISD::Pop:
+        return "AlexISD::Pop";
+    case AlexISD::LI32:
+        return "AlexISD::LI32";
+    case AlexISD::PCRel:
+        return "AlexISD::PCRel";
+    default:
+        return NULL;
     }
 }
 
@@ -65,8 +81,6 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
 
     setOperationAction(ISD::SELECT_CC,         MVT::i32,   Expand);
     setOperationAction(ISD::SELECT_CC,         MVT::Other, Expand);
-    //setOperationAction(ISD::BR_CC,             MVT::Other, Expand);
-    //setOperationAction(ISD::BR_CC,             MVT::iAny, Expand);
 
     //setOperationAction(ISD::SELECT,            MVT::i32,   Expand);
     setOperationAction(ISD::VASTART,           MVT::Other, Custom);
@@ -116,7 +130,6 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
         printf("sign extend in reg\n");
         break;
     case ISD::ANY_EXTEND:
-    case ISD::LOAD:
     case ISD::SMUL_LOHI:
         break;
     }
@@ -240,9 +253,8 @@ SDValue AlexTargetLowering::getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
                       unsigned Flag, SDValue Chain,
                       const MachinePointerInfo &PtrInfo) const {
     SDLoc DL(N);
-    return DAG.getNode(AlexISD::Wrapper, DL, Ty,
+    return DAG.getNode(AlexISD::GlobalWrapper, DL, Ty,
                               getTargetNode(N, Ty, DAG, Flag), Chain /*??*/);
-    //return DAG.getLoad(Ty, DL, Chain, Tgt, PtrInfo, false, false, false, 0);
 }
 SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
                                                SelectionDAG &DAG) const {
@@ -492,7 +504,7 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
             llvm_unreachable("sret virtual register not created in the entry block");
         SDValue Val =
                 dag.getCopyFromReg(chain, dl, Reg, getPointerTy(dag.getDataLayout()));
-        unsigned RETVAL = Alex::T0;
+        unsigned RETVAL = Alex::S0; //Alex::T0;
 
         chain = dag.getCopyToReg(chain, dl, RETVAL, Val, Flag);
         Flag = chain.getValue(1);
@@ -975,7 +987,7 @@ AlexTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
             return std::make_pair(0u, static_cast<const TargetRegisterClass*>(0));
         case 'c': // register suitable for indirect jump
             if (VT == MVT::i32)
-                return std::make_pair((unsigned)Alex::T0, &Alex::Int32RegsRegClass);
+                return std::make_pair((unsigned)Alex::S0, &Alex::Int32RegsRegClass);
             assert("Unexpected type.");
         }
     }

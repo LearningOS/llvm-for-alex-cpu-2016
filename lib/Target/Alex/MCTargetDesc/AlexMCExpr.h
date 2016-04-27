@@ -22,7 +22,8 @@ public:
   enum VariantKind {
     VK_Alex_None,
     VK_Alex_LO,
-    VK_Alex_HI
+    VK_Alex_HI,
+    VK_Alex_PC_REL16
   };
 
 private:

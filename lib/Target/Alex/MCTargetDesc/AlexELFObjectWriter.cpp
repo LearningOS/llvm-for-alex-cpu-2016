@@ -51,36 +51,23 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
     unsigned Kind = (unsigned)Fixup.getKind();
 
     switch (Kind) {
-        default:
-            llvm_unreachable("invalid fixup kind!");
-        case FK_Data_4:
-            Type = ELF::R_ALEX_32;
-            break;
-        case Alex::fixup_Alex_32:
-            Type = ELF::R_ALEX_32;
-            break;
-        case Alex::fixup_Alex_GPREL16:
-            Type = ELF::R_ALEX_GPREL16;
-            break;
-        case Alex::fixup_Alex_GOT_Global:
-        case Alex::fixup_Alex_GOT_Local:
-            Type = ELF::R_ALEX_GOT16;
-            break;
-        case Alex::fixup_Alex_HI16:
-            Type = ELF::R_ALEX_HI16;
-            break;
-        case Alex::fixup_Alex_LO16:
-            Type = ELF::R_ALEX_LO16;
-            break;
-        case Alex::fixup_Alex_PC16:
-            Type = ELF::R_ALEX_PC16;
-            break;
-        case Alex::fixup_Alex_GOT_HI16:
-            Type = ELF::R_ALEX_GOT_HI16;
-            break;
-        case Alex::fixup_Alex_GOT_LO16:
-            Type = ELF::R_ALEX_GOT_LO16;
-            break;
+    default:
+        llvm_unreachable("invalid fixup kind!");
+    case FK_Data_4:
+        Type = ELF::R_ALEX_32;
+        break;
+    case Alex::fixup_Alex_32:
+        Type = ELF::R_ALEX_32;
+        break;
+    case Alex::fixup_Alex_HI16:
+        Type = ELF::R_ALEX_HI16;
+        break;
+    case Alex::fixup_Alex_LO16:
+        Type = ELF::R_ALEX_LO16;
+        break;
+    case Alex::fixup_Alex_PC16:
+        Type = ELF::R_ALEX_PC16;
+        break;
     }
 
     return Type;
@@ -109,8 +96,6 @@ AlexELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
             // points to a symbol.
         case ELF::R_ALEX_HI16:
         case ELF::R_ALEX_LO16:
-            // R_ALEX_32 should be a relocation record, I don't know why Mips set it to 
-            // false.
         case ELF::R_ALEX_32:
             return true;
 

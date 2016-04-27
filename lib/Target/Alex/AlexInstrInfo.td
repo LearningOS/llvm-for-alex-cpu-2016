@@ -371,7 +371,6 @@ multiclass StoreM32<bits<8> op, string instr_asm, PatFrag OpNode,
   def #NAME# : StoreM<op, instr_asm, OpNode, Int32Regs, mem, Pseudo>;
 }
 
-//@JumpFR {
 let isBranch=1, isTerminator=1, isBarrier=1, imm16=0, hasDelaySlot = 1,
     isIndirectBranch = 1 in
 class JumpFR<bits<8> op, string instr_asm, RegisterClass RC>:
@@ -380,15 +379,15 @@ class JumpFR<bits<8> op, string instr_asm, RegisterClass RC>:
   let rb = 0;
   let imm16 = 0;
 }
-//@JumpFR }
 
 // Return instruction
-class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
+class RetBase<RegisterClass RC>: JumpFR<0x3c, "retbase", RC> {
   let isReturn = 1;
   let isCodeGenOnly = 1;
   let hasCtrlDep = 1;
   let hasExtraSrcRegAllocReq = 1;
 }
+def RETB     : RetBase<Int32Regs>;
 
 //===----------------------------------------------------------------------===//
 // Instruction definition
@@ -438,7 +437,7 @@ def GEU     : CompareRRR<0x22, "geu",setuge, Int32Regs>;
 
 /* 数据传输 */
 /* Load */
-defm LW     : LoadM32<0x2d,  "lw",  load_a>;
+//defm LW     : LoadM32<0x2d,  "lw",  load_a>;
 defm LB     : LoadM32<0x2f,  "lb",  zextloadi8>;
 defm LH     : LoadM32<0x2e,  "lh",  zextloadi16_a>;
 
@@ -452,7 +451,7 @@ defm LBITs  : LoadM32<0xfd,  "lbits", sextloadi1, 1>;
 defm LBITa  : LoadM32<0xfd,  "lbita", extloadi1, 1>;
 
 /* Save */
-defm SW     : StoreM32<0x34, "sw",  store_a>;
+//defm SW     : StoreM32<0x34, "sw",  store_a>;
 defm SB     : StoreM32<0x36, "sb",  truncstorei8>;
 defm SH     : StoreM32<0x08, "sh",  truncstorei16_a>;
 
@@ -478,13 +477,12 @@ def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
 def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
               (ADDiu Int32Regs:$hi, tjumptable:$lo)>;
 
-def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntUnaryOp>;
-class WrapperPat<SDNode node>:
-      Pat<(AlexWrapper node:$in),
-              (LI32 node:$in)>;
+def AlexGlobalWrapper    : SDNode<"AlexISD::GlobalWrapper", SDTIntUnaryOp>;
 
-def : WrapperPat<tglobaladdr>;
-def : WrapperPat<tjumptable>;
+def : Pat<(AlexGlobalWrapper tglobaladdr:$in),
+    (LI32 tglobaladdr:$in)>;
+def : Pat<(AlexGlobalWrapper tjumptable:$in),
+    (LI32 tjumptable:$in)>;
 
 /* 分支语句 */
 
@@ -493,6 +491,7 @@ def brtarget16    : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranch16Target";
 }
+
 let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
 def BNEZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
         "bnez\t$ra, $imm16",
@@ -505,21 +504,21 @@ def jmptarget  : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
 }
 
-def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
+/*def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
              "j\t$imm16", [(br bb:$imm16)], NoItinerary> {
   let isBranch = 1;
   let isTerminator = 1;
   let isBarrier = 1;
   let hasDelaySlot = 1;
-}
+}*/
 
 /* 函数调用 */
 
 /* Return Pseudo */
 let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
     def RetLR : AlexPseudo<(outs), (ins), "", [(AlexRet)]>;
-def RETB     : RetBase<Int32Regs>;
-def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
+
+//def RET      : InstrPlain<0x2c, "ret", [], NoItinerary>;
 
 def calltarget  : Operand<iPTR> {
   let EncoderMethod = "getJumpTargetOpValue";
@@ -528,6 +527,7 @@ def SDT_AlexCallLink      : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
 def AlexCallLink : SDNode<"AlexISD::JmpLink",SDT_AlexCallLink,
                          [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue,
                           SDNPVariadic]>;
+
 /* 真正的函数调用指令(只能寄存器寻址) */
 let isCall=1, hasDelaySlot=1 in {
   class CallLinkReg<bits<8> op, string instr_asm,
@@ -562,8 +562,7 @@ def ADJCALLSTACKUP   : AlexPseudo<(outs), (ins uimm16:$amt1, uimm16:$amt2),
 /* 16/32位整数加载的直接翻译 */
 def : Pat<(i32 immSExt16:$in),
           (LI imm:$in)>;
-def : Pat<(i32 addr:$in),
-          (LW mem:$in)>;
+
 def : Pat<(i32 immSExt32:$in),
           (LI32 imm:$in)>;
 

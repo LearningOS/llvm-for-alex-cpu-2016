@@ -804,25 +804,8 @@ MCSymbolRefExpr::VariantKind AlexAsmParser::getVariantKind(StringRef Symbol) {
 //@getVariantKind body {
   MCSymbolRefExpr::VariantKind VK
           = StringSwitch<MCSymbolRefExpr::VariantKind>(Symbol)
-                  .Case("hi",          MCSymbolRefExpr::VK_Alex_ABS_HI)
-                  .Case("lo",          MCSymbolRefExpr::VK_Alex_ABS_LO)
-//                  .Case("gp_rel",      MCSymbolRefExpr::VK_Alex_GPREL)
-//                  .Case("call16",      MCSymbolRefExpr::VK_Alex_GOT_CALL)
-//                  .Case("got",         MCSymbolRefExpr::VK_Alex_GOT)
-//#if CH >= CH12_1
-//                  .Case("tlsgd",       MCSymbolRefExpr::VK_Alex_TLSGD)
-//                  .Case("tlsldm",      MCSymbolRefExpr::VK_Alex_TLSLDM)
-//                  .Case("dtp_hi",      MCSymbolRefExpr::VK_Alex_DTP_HI)
-//                  .Case("dtp_lo",      MCSymbolRefExpr::VK_Alex_DTP_LO)
-//                  .Case("gottp",       MCSymbolRefExpr::VK_Alex_GOTTPREL)
-//                  .Case("tp_hi",       MCSymbolRefExpr::VK_Alex_TP_HI)
-//                  .Case("tp_lo",       MCSymbolRefExpr::VK_Alex_TP_LO)
-//#endif
-//                  .Case("got_disp",    MCSymbolRefExpr::VK_Alex_GOT_DISP)
-//                  .Case("got_page",    MCSymbolRefExpr::VK_Alex_GOT_PAGE)
-//                  .Case("got_ofst",    MCSymbolRefExpr::VK_Alex_GOT_OFST)
-//                  .Case("hi(%neg(%gp_rel",    MCSymbolRefExpr::VK_Alex_GPOFF_HI)
-//                  .Case("lo(%neg(%gp_rel",    MCSymbolRefExpr::VK_Alex_GPOFF_LO)
+                  .Case("hi", MCSymbolRefExpr::VK_Alex_ABS_HI)
+                  .Case("lo", MCSymbolRefExpr::VK_Alex_ABS_LO)
                   .Default(MCSymbolRefExpr::VK_None);
 
   return VK;
