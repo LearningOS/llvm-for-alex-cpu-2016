@@ -55,7 +55,8 @@ namespace llvm {
     bool lowerAbsoluteCall(MachineBasicBlock::iterator &MI, unsigned Reg) const;
 
     bool lowerLoadFI(MachineBasicBlock::iterator &MI, int16_t FI, unsigned Reg) const;
-
+    bool lowerPushR(MachineBasicBlock::iterator &MI, unsigned Reg) const;
+    bool lowerPopR(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerPush(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerPop(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerMov(MachineBasicBlock::iterator &MI, unsigned Dest, unsigned Src) const;

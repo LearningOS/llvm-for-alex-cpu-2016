@@ -144,6 +144,26 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
         lowerPop(MI, Alex::S0);
         break;
     }
+    case Alex::PUSHr: {
+        auto Reg = MI->getOperand(0).getReg();
+        lowerPushR(MI, Reg);
+        break;
+    }
+    case Alex::POPr: {
+        auto Reg = MI->getOperand(0).getReg();
+        lowerPopR(MI, Reg);
+        break;
+    }
+    case Alex::V9LI16_PS: {
+        auto Reg = MI->getOperand(0).getReg();
+        auto Imm = MI->getOperand(1).getImm();
+        lowerPushR(MI, Alex::S0);
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LI)).addImm(Imm);
+        lowerMov(MI, Reg, Alex::S0);
+        lowerPopR(MI, Alex::S0);
+        printf("v9 li16 pseudo: li %d\n", (int16_t)Imm);
+        break;
+    }
     }
 
     MBB.erase(MI);
@@ -151,7 +171,7 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 }
 
 void AlexInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                unsigned SrcReg, bool /*isKill*/, int FI,
+                unsigned SrcReg, bool isKill, int FI,
                 const TargetRegisterClass *, const TargetRegisterInfo *) const {
     DebugLoc DL;
     if (I != MBB.end()) DL = I->getDebugLoc();
@@ -162,11 +182,17 @@ void AlexInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBloc
 //    Opc = Alex::SW;
 //    assert(Opc && "Register class not handled!");
 //    BuildMI(MBB, I, DL, get(Opc)).addReg(SrcReg, getKillRegState(isKill))
-//            .addFrameIndex(FI).addImm(0).addMemOperand(MMO);
+    //        .addFrameIndex(FI).addImm(0).addMemOperand(MMO);
+    //SrcReg = Reg.getReg();
+    if (SrcReg == 0x80000005) {
+        SrcReg = Alex::S0;
+        printf("store reg to stack slot 0x80000005\n");
+    }
+
     lowerPush(I, Alex::S0);
     lowerMov(I, Alex::S0, SrcReg);
     // load
-    BuildMI(MBB, I, DL, get(Alex::V9SL)).addImm(FI);
+    BuildMI(MBB, I, DL, get(Alex::V9SL)).addImm(FI).addReg(Alex::S0, getImplRegState(true) | getKillRegState(isKill));
     lowerPop(I, Alex::S0);
 }
 
@@ -389,8 +415,8 @@ bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned
     auto lhsReg = MI->getOperand(1).getReg();
     auto rhsReg = MI->getOperand(2).getReg();
 
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Alex::S0);
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Alex::S1);
+    lowerPushR(MI, Alex::S0);
+    lowerPushR(MI, Alex::S1);
     lowerMov(MI, Alex::S0, lhsReg);
     lowerMov(MI, Alex::S1, rhsReg);
 
@@ -412,19 +438,23 @@ bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned
     }
 
     lowerMov(MI, resultReg, Alex::S0);
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::POPr)).addReg(Alex::S1);
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::POPr)).addReg(Alex::S0);
+    lowerPopR(MI, Alex::S1);
+    lowerPopR(MI, Alex::S0);
+    //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::POPr)).addReg(Alex::S1);
+    //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::POPr)).addReg(Alex::S0);
 
     return true;
 }
 
 bool AlexInstrInfo::lowerPush(MachineBasicBlock::iterator &MI, unsigned Reg) const {
-    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Reg);
+    lowerPushR(MI, Reg);
+    //BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Reg);
     return true;
 }
 
 bool AlexInstrInfo::lowerPop(MachineBasicBlock::iterator &MI, unsigned Reg) const {
-    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::POPr), Reg);
+    //BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::POPr), Reg);
+    lowerPopR(MI, Reg);
     return true;
 }
 
@@ -561,6 +591,56 @@ bool AlexInstrInfo::lowerLoadFI(MachineBasicBlock::iterator &MI, int16_t FI, uns
     lowerPop(MI, Alex::S0);
     return true;
 }
+
+bool AlexInstrInfo::lowerPushR(MachineBasicBlock::iterator &MI, unsigned Reg) const {
+    auto &MBB = *MI->getParent();
+    unsigned Opcode = 0;
+    switch(Reg) {
+    default:
+        printf("unknown register: %d\n", Reg);
+        llvm_unreachable("lowerPushR unknown register");
+    case Alex::S0:
+        Opcode = Alex::V9PUSHA;
+        break;
+    case Alex::S1:
+        Opcode = Alex::V9PUSHB;
+        break;
+    case Alex::S2:
+        Opcode = Alex::V9PUSHC;
+        break;
+    case Alex::T0:
+        Opcode = Alex::V9PUSHD;
+        break;
+    }
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(Opcode));
+    return true;
+}
+
+bool AlexInstrInfo::lowerPopR(MachineBasicBlock::iterator &MI, unsigned Reg) const {
+    unsigned Opcode = 0;
+    switch(Reg) {
+    default:
+        llvm_unreachable("lowerPushR unknown register");
+    case Alex::S0:
+        Opcode = Alex::V9POPA;
+        break;
+    case Alex::S1:
+        Opcode = Alex::V9POPB;
+        break;
+    case Alex::S2:
+        Opcode = Alex::V9POPC;
+        break;
+    case Alex::T0:
+        Opcode = Alex::V9POPD;
+        break;
+    }
+    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Opcode));
+    return true;
+}
+
+
+
+
 
 
 

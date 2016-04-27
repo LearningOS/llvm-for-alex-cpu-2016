@@ -35,10 +35,13 @@
         - MULHS long long的乘法, 可以软件实现?
     - 不能处理的LLVM IR
         - ~~anyext (貌似可以用clang -O2消除掉这条指令)~~
+    - ~~elf转v9可执行格式~~
+        - 完成, 项目地址 https://github.com/a1exwang/alex2v9
+        - 使用方法ruby main.rb a.out result.v9
     - elf转换器, 提取elf中的符号信息
 - 长期目标
     - 编译器
-        - 简化AlexMachine的指令集使其更像V9Cpu
+        - 简化AlexMachine的指令集使其更像V9Cpu, 最终可以通过V9Cpu的模拟器运行
         - 要变成伪指令的指令
             - ~~lbit, lbits~~
             - ~~lbs~~

@@ -461,7 +461,7 @@ defm LEAW   : LeaM32<0x02, "addi">;
 /* Load Immediate */
 def LI      : InstrRI<0x31, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "li\t$ra, $imm16",
-            [(set Int32Regs:$ra, (i32 immSExt16:$imm16))], NoItinerary>;
+            [/*(set Int32Regs:$ra, (i32 immSExt16:$imm16))*/], NoItinerary>;
 def LIh     : InstrRI<0x33, (outs Int32Regs:$ra), (ins simm16:$imm16),
             "lih\t$ra, $imm16",
             [], NoItinerary>;
@@ -469,13 +469,12 @@ def LIh     : InstrRI<0x33, (outs Int32Regs:$ra), (ins simm16:$imm16),
 def LI32    : AlexPseudo<(outs Int32Regs:$ra), (ins simm32:$imm), "li32",
             [(set Int32Regs:$ra, (AlexLI32 immSExt32:$imm))]>;
 
-
 /* Global Address/Jump table */
 
 def : Pat<(AlexHi tjumptable:$in), (LIh tjumptable:$in)>;
 def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
-def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
-              (ADDiu Int32Regs:$hi, tjumptable:$lo)>;
+//def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
+//              (ADDiu Int32Regs:$hi, tjumptable:$lo)>;
 
 def AlexGlobalWrapper    : SDNode<"AlexISD::GlobalWrapper", SDTIntUnaryOp>;
 
@@ -560,8 +559,8 @@ def ADJCALLSTACKUP   : AlexPseudo<(outs), (ins uimm16:$amt1, uimm16:$amt2),
 
 // 模式匹配
 /* 16/32位整数加载的直接翻译 */
-def : Pat<(i32 immSExt16:$in),
-          (LI imm:$in)>;
+//def : Pat<(i32 immSExt16:$in),
+//          (LI imm:$in)>;
 
 def : Pat<(i32 immSExt32:$in),
           (LI32 imm:$in)>;
@@ -569,8 +568,8 @@ def : Pat<(i32 immSExt32:$in),
 /* Hi/Lo的加载的直接翻译 */
 def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
-def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
-          (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
+//def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
+//          (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
 
 /* 普通有符号比较的分支指令的直接翻译 */
 //def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),

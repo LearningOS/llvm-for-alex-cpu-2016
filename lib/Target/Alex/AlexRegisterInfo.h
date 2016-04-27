@@ -21,7 +21,7 @@ namespace llvm {
 
       const uint32_t *getNoPreservedMask() const override {
         static const uint32_t NoPreservedRegs[] = {
-                Alex::T1, Alex::T2, Alex::S1, Alex::S2
+                Alex::T0, Alex::S0, Alex::S1
         };
         return NoPreservedRegs;
       }
