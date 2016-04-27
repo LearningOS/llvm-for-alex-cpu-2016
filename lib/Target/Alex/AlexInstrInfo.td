@@ -423,16 +423,17 @@ def SAR     : ArithLogicRRR<0x14, "sar", sra, Int32Regs>;
 def AND     : ArithLogicRRR<0x16, "and", and, Int32Regs>;
 def OR      : ArithLogicRRR<0x17, "or",  or, Int32Regs>;
 def XOR     : ArithLogicRRR<0x18, "xor", xor, Int32Regs>;
-
+/*
 def EQ      : CompareRRR<0x1a, "eq", seteq, Int32Regs>;
 def NE      : CompareRRR<0x1b, "ne", setne, Int32Regs>;
 def LT      : CompareRRR<0x1c, "lt", setlt, Int32Regs>;
-def LTU     : CompareRRR<0x1d, "ltu",setult,Int32Regs>;
 def GT      : CompareRRR<0x1e, "gt", setgt, Int32Regs>;
-def GTU     : CompareRRR<0x1f, "gtu",setugt,Int32Regs>;
 def LE      : CompareRRR<0x20, "le", setle, Int32Regs>;
-def LEU     : CompareRRR<0x21, "leu",setule, Int32Regs>;
 def GE      : CompareRRR<0x22, "ge", setge, Int32Regs>;
+*/
+def LTU     : CompareRRR<0x1d, "ltu",setult,Int32Regs>;
+def GTU     : CompareRRR<0x1f, "gtu",setugt,Int32Regs>;
+def LEU     : CompareRRR<0x21, "leu",setule, Int32Regs>;
 def GEU     : CompareRRR<0x22, "geu",setuge, Int32Regs>;
 
 /* 数据传输 */
@@ -487,37 +488,15 @@ def : WrapperPat<tjumptable>;
 
 /* 分支语句 */
 
-/* Return Pseudo */
-let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
-    def RetLR : AlexPseudo<(outs), (ins), "", [(AlexRet)]>;
-def RETB     : RetBase<Int32Regs>;
-def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
-
 def brtarget16    : Operand<OtherVT> {
   let EncoderMethod = "getBranch16TargetOpValue";
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranch16Target";
 }
 let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
-def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
-          "bnz\t$ra, $imm16",
-          [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
-def BE  : InstrRRI<0x25, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "be\t$ra, $rb, $imm16",
-         [(brcond (i32 (setle Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-
-def BNE : InstrRRI<0x26, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bne\t$ra, $rb, $imm16",
-         [(brcond (i32 (setge Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
 def BNEZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
         "bnez\t$ra, $imm16",
          [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
-def BLT : InstrRRI<0x27, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "blt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setlt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
-def BGT : InstrRRI<0x28, (outs), (ins Int32Regs:$ra, Int32Regs:$rb, brtarget16:$imm16),
-        "bgt\t$ra, $rb, $imm16",
-         [(brcond (i32 (setgt Int32Regs:$ra, Int32Regs:$rb)), bb:$imm16)], NoItinerary>;
 }
 
 /* 无条件跳转 */
@@ -535,6 +514,13 @@ def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
 }
 
 /* 函数调用 */
+
+/* Return Pseudo */
+let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+    def RetLR : AlexPseudo<(outs), (ins), "", [(AlexRet)]>;
+def RETB     : RetBase<Int32Regs>;
+def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
+
 def calltarget  : Operand<iPTR> {
   let EncoderMethod = "getJumpTargetOpValue";
 }
@@ -588,18 +574,18 @@ def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
           (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
 
 /* 普通有符号比较的分支指令的直接翻译 */
-def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (LT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (GT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETLE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (LE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (GE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETEQ, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (EQ Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETNE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (NE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (LT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (GT Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETLE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (LE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (GE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETEQ, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (EQ Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETNE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (NE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 
 /* 无符号分支指令的直接翻译 */
 def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
@@ -635,11 +621,3 @@ def SEXT_INREG_16  : AlexPseudo<(outs Int32Regs:$rb), (ins Int32Regs:$ra), "sext
 def MULhu     : ArithLogicRRR<0x07, "mulhu",  mulhu,  Int32Regs>;
 def MULhs     : ArithLogicRRR<0x07, "mulhs",  mulhs,  Int32Regs>;
 
-/* V9Cpu的一些指令 */
-def PUSHr     : InstrR<0xFF, (outs), (ins Int32Regs:$ra), "pushr\t$ra", [], NoItinerary>;
-def POPr      : InstrR<0xFF, (outs Int32Regs:$ra), (ins), "popr\t$ra", [], NoItinerary>;
-def MOVrr     : InstrRR<0xFF, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "movrr\t$ra, $rb", [], NoItinerary>;
-def ADDa      : InstrPlain<0xFF, "adda", [], NoItinerary>;
-def SUBa      : InstrPlain<0xFF, "suba", [], NoItinerary>;
-def MULa      : InstrPlain<0xFF, "mula", [], NoItinerary>;
-def DIVa      : InstrPlain<0xFF, "diva", [], NoItinerary>;

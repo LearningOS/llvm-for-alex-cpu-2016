@@ -1,12 +1,9 @@
 #include <llvm/CodeGen/MachineMemOperand.h>
 #include <MCTargetDesc/AlexBaseInfo.h>
 #include "AlexInstrInfo.h"
-#include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/TargetRegistry.h"
 
 using namespace llvm;
@@ -36,7 +33,7 @@ MachineMemOperand *AlexInstrInfo::GetMemOperand(MachineBasicBlock &MBB, int FI,
     unsigned Align = MFI.getObjectAlignment(FI);
 
     return MF.getMachineMemOperand(MachinePointerInfo::getFixedStack(MF, FI, 0), Flag,
-                                   MFI.getObjectSize(FI), Align);
+                                   static_cast<uint64_t>(MFI.getObjectSize(FI)), Align);
 }
 
 void AlexInstrInfo::expandRetLR(MachineBasicBlock &MBB,
@@ -49,6 +46,10 @@ void AlexInstrInfo::expandRetLR(MachineBasicBlock &MBB,
 }
 
 bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
+    if (MI->getDesc().getOpcode() == Alex::V9BLE_PS) {
+        printf("hahaaha-----------------\n");
+    }
+
 //@expandPostRAPseudo-body
     MachineBasicBlock &MBB = *MI->getParent();
     bool ret = true;
@@ -104,9 +105,51 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
     case Alex::SUB:
     case Alex::MUL:
     case Alex::DIV:
-        ret = lowerArithLogicRRR(MI);
-        printf("lower add %d-----------------------------\n", ret);
+        ret = lowerArithLogicRRR(MI, MI->getDesc().getOpcode());
+        printf("lower arith-logic %d-----------------------------\n", ret);
         break;
+
+    case Alex::V9LT_PS:
+    case Alex::V9GT_PS:
+    case Alex::V9LE_PS:
+    case Alex::V9GE_PS:
+    case Alex::V9EQ_PS:
+    case Alex::V9NE_PS:
+        ret = lowerV9Cmp(MI, MI->getDesc().getOpcode());
+        printf("lower v9 comparason, opcode %d\n", MI->getDesc().getOpcode());
+        break;
+
+    case Alex::V9BLT_PS:
+    case Alex::V9BGT_PS:
+    case Alex::V9BLE_PS:
+    case Alex::V9BGE_PS:
+    case Alex::V9BEQ_PS:
+    case Alex::V9BNE_PS: {
+        auto lhsReg = MI->getOperand(0).getReg();
+        auto rhsReg = MI->getOperand(1).getReg();
+        auto targetBlock = MI->getOperand(2).getMBB();
+
+        // push RB
+        lowerPush(MI, Alex::S1);
+        // push $ra
+        lowerPush(MI, lhsReg);
+        // push $rb
+        lowerPush(MI, rhsReg);
+
+        // pop RA
+        lowerPop(MI, Alex::S0);
+        // pop RB
+        lowerPop(MI, Alex::S1);
+        // RA = RA < RB
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9LT));
+        // pop RB
+        lowerPop(MI, Alex::S1);
+
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9BNEZ)).addMBB(targetBlock);
+
+        printf("lower v9 branch, opcode %d\n", MI->getDesc().getOpcode());
+        break;
+    }
     }
 
     MBB.erase(MI);
@@ -115,7 +158,7 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 
 void AlexInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                 unsigned SrcReg, bool isKill, int FI,
-                const TargetRegisterClass *RC, const TargetRegisterInfo *TRI) const {
+                const TargetRegisterClass *, const TargetRegisterInfo *) const {
     DebugLoc DL;
     if (I != MBB.end()) DL = I->getDebugLoc();
     MachineMemOperand *MMO = GetMemOperand(MBB, FI, MachineMemOperand::MOStore);
@@ -130,8 +173,8 @@ void AlexInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBloc
 
 
 void AlexInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                 unsigned DestReg, int FI, const TargetRegisterClass *RC,
-                 const TargetRegisterInfo *TRI) const {
+                 unsigned DestReg, int FI, const TargetRegisterClass *,
+                 const TargetRegisterInfo *) const {
   DebugLoc DL;
   if (I != MBB.end()) DL = I->getDebugLoc();
   MachineMemOperand *MMO = GetMemOperand(MBB, FI, MachineMemOperand::MOLoad);
@@ -333,7 +376,7 @@ bool AlexInstrInfo::lowerSelect(MachineBasicBlock::iterator &MI) const {
     return true;
 }
 
-bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI) const {
+bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned Opcode) const {
     auto &MBB = *MI->getParent();
     auto resultReg = MI->getOperand(0).getReg();
     auto lhsReg = MI->getOperand(1).getReg();
@@ -344,7 +387,7 @@ bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI) const {
     BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MOVrr), Alex::S0).addReg(lhsReg);
     BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MOVrr), Alex::S1).addReg(rhsReg);
 
-    switch(MI->getDesc().getOpcode()) {
+    switch(Opcode) {
     default:
         return false;
     case Alex::ADD:
@@ -367,3 +410,70 @@ bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI) const {
 
     return true;
 }
+
+bool AlexInstrInfo::lowerPush(MachineBasicBlock::iterator &MI, unsigned Reg) const {
+    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::PUSHr)).addReg(Reg);
+    return true;
+}
+
+bool AlexInstrInfo::lowerPop(MachineBasicBlock::iterator &MI, unsigned Reg) const {
+    BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::POPr), Reg);
+    return true;
+}
+
+bool AlexInstrInfo::lowerV9Cmp(MachineBasicBlock::iterator &MI, unsigned Opcode) const {
+    auto &MBB = *MI->getParent();
+    auto targetReg = MI->getOperand(0).getReg();
+    auto lhsReg = MI->getOperand(1).getReg();
+    auto rhsReg = MI->getOperand(2).getReg();
+
+
+    // push RB
+    lowerPush(MI, Alex::S1);
+    // push $ra
+    lowerPush(MI, lhsReg);
+    // push $rb
+    lowerPush(MI, rhsReg);
+
+    // pop RA
+    lowerPop(MI, Alex::S0);
+    // pop RB
+    lowerPop(MI, Alex::S1);
+    unsigned V9Opcode = 0;
+    switch(Opcode) {
+    default:
+        return false;
+    case Alex::V9LT_PS:
+        V9Opcode = Alex::V9LT;
+        break;
+    case Alex::V9GT_PS:
+        V9Opcode = Alex::V9GT;
+        break;
+    case Alex::V9LE_PS:
+        V9Opcode = Alex::V9LE;
+        break;
+    case Alex::V9GE_PS:
+        V9Opcode = Alex::V9GE;
+        break;
+    case Alex::V9EQ_PS:
+        V9Opcode = Alex::V9EQ;
+        break;
+    case Alex::V9NE_PS:
+        V9Opcode = Alex::V9NE;
+        break;
+    }
+    BuildMI(MBB, MI, MI->getDebugLoc(), get(V9Opcode));
+    // pop RB
+    lowerPop(MI, Alex::S1);
+
+    lowerPush(MI, Alex::S0);
+    lowerPop(MI, targetReg);
+
+    return true;
+}
+
+
+
+
+
+

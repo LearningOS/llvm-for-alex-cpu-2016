@@ -48,7 +48,7 @@
             - mov $ra, $rb
                 - push $ra
                 - pop $rb
-            - add $ra, $rb, $rc
+            - ~~add $ra, $rb, $rc~~(所有算数逻辑指令)
                 - push RA
                 - push RB
                 - mov RA, $rb
@@ -61,6 +61,9 @@
             - sw
             - call
             - ret
+            - ~~le, ge, ble, bge~~, 以及他们的无符号指令
+            - j, jr
+                - jsra
             - ~~select~~
                 - r = trueReg * condition + falseReg * !condition
 

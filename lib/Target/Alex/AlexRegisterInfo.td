@@ -8,9 +8,9 @@ class AlexAllReg<bits<16> Enc, string n> : AlexReg<Enc, n>;
 let Namespace = "Alex" in {
   //@ General Purpose Registers
   def R0     : AlexAllReg<0,   "r0">,     DwarfRegNum<[0]>;
-  def T0     : AlexAllReg<0,   "t0">,     DwarfRegNum<[1]>;
-  def T1     : AlexAllReg<1,   "t1">,     DwarfRegNum<[2]>;
-  def T2     : AlexAllReg<2,   "t2">,     DwarfRegNum<[3]>;
+  def T0     : AlexAllReg<0,   "t0">,     DwarfRegNum<[1]>; // RA
+  def T1     : AlexAllReg<1,   "t1">,     DwarfRegNum<[2]>; // RB
+  def T2     : AlexAllReg<2,   "t2">,     DwarfRegNum<[3]>; // RC
   def T3     : AlexAllReg<3,   "t3">,     DwarfRegNum<[4]>;
   def T4     : AlexAllReg<4,   "t4">,     DwarfRegNum<[5]>;
   def S0     : AlexAllReg<5,   "s0">,     DwarfRegNum<[6]>;

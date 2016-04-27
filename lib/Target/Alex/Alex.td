@@ -2,6 +2,7 @@ include "llvm/Target/Target.td"
 include "AlexRegisterInfo.td"
 include "AlexCallingConv.td"
 include "AlexInstrInfo.td"
+include "AlexInstrInfoV9.td"
 
 def AlexInstrInfo : instrInfo;
 
