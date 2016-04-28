@@ -4,7 +4,7 @@
 /* 访存指令 */
 def V9LL      : InstrI<0x0E, (outs), (ins simm24:$imm24), "v9ll\t$imm24", [], NoItinerary>;
 def V9LBL     : InstrI<0x26, (outs), (ins simm24:$imm24), "v9lbl\t$imm24", [], NoItinerary>;
-def V9SL      : InstrI<0x40, (outs), (ins simm24:$imm24), "v9sw\t$imm24", [], NoItinerary>;
+def V9SL      : InstrI<0x40, (outs), (ins simm24:$imm24), "v9sl\t$imm24", [], NoItinerary>;
 
 def V9LI      : InstrI<0x23, (outs), (ins simm24:$imm24), "v9li\t$imm24", [], NoItinerary>;
 def V9LIh     : InstrI<0x24, (outs), (ins simm24:$imm24), "v9lih\t$imm24", [], NoItinerary>;
@@ -26,6 +26,8 @@ def PUSHr     : AlexPseudo<(outs), (ins Int32Regs:$ra), "pushr\t$ra", []>;
 def POPr      : AlexPseudo<(outs Int32Regs:$ra), (ins), "popr\t$ra", []>;
 
 def LEAg      : InstrI<0x08, (outs), (ins simm24:$imm24), "leag\tRA, PC, $imm24", [], NoItinerary>;
+
+def V9SHL     : InstrI<0x71, (outs), (ins simm24:$imm24), "v9shl\t$imm24", [], NoItinerary>;
 
 /* 分支,函数调用,返回指令 */
 def V9ENT     : InstrI<0x01, (outs), (ins simm24:$imm24), "v9ent\t$imm24", [], NoItinerary>;
@@ -117,15 +119,15 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
                     [(brcc SETNE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm24)]>;
 }
 
-def : Pat<(i32 immSExt16:$in),
+def : Pat<(i32 immSExt24:$in),
           (V9LI16_PS imm:$in)>;
 
 //def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
 //          (V9ADDi_PS Int32Regs:$hi, tjumptable:$lo)>;
 //def : Pat<(AlexLo tglobaladdr:$lo),
 //          (V9LI32_PS tglobaladdr:$lo)>;
-//def : Pat<(AlexGlobalWrapper tglobaladdr:$in),
-//    (V9LI32_PS tglobaladdr:$in)>;
+def : Pat<(AlexGlobalWrapper tglobaladdr:$in),
+    (V9LI32_PS tglobaladdr:$in)>;
 
 def : Pat<(AlexHi tglobaladdr:$in), (V9LIh16_PS tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (V9LI16_PS tglobaladdr:$in)>;

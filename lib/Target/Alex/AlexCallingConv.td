@@ -1,7 +1,7 @@
 
 def CC_Alex : CallingConv<[
   // 每个参数4bytes, 按8bytes对齐, 用堆栈传递参数
-  CCAssignToStack<4, 8>
+  CCAssignToStack<8, 8>
 ]>;
 
 def RetCC_Alex : CallingConv<[

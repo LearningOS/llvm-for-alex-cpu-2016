@@ -96,6 +96,7 @@
         - ~~用xem跑通汇编写的helloworld~~
         - ~~用xem跑通c写的helloworld~~
             - pushi翻译的有bug
+            - 32bit imm hi 8 bit
         - osN.c
     - 汇编器: 完成v0.1, 未测试
     - 内联汇编: 完成v0.1, 未测试

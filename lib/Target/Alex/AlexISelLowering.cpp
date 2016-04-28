@@ -197,7 +197,7 @@ void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
 
     // Record the frame index of the first variable argument
     // which is a value necessary to VASTART.
-    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+    int FI = MFI->CreateFixedObject(8/*RegSize*/, VaArgOffset, true);
     AlexFI->setVarArgsFrameIndex(FI);
 
     // Copy the integer registers that have not been used for argument passing
@@ -207,7 +207,7 @@ void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
     for (unsigned I = Idx; I < NumRegs; ++I, VaArgOffset += RegSize) {
         unsigned Reg = addLiveIn(MF, ArgRegs[I], RC);
         SDValue ArgValue = DAG.getCopyFromReg(Chain, DL, Reg, RegTy);
-        FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+        FI = MFI->CreateFixedObject(8/*RegSize*/, VaArgOffset, true);
         SDValue PtrOff = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
         SDValue Store = DAG.getStore(Chain, DL, ArgValue, PtrOff,
                                      MachinePointerInfo(), false, false, 0);
@@ -327,7 +327,7 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
         assert(VA.isMemLoc());
 
         // The stack pointer offset is relative to the caller stack frame.
-        int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8,
+        int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8 * 2,
                                         VA.getLocMemOffset(), true);
 
         // Create load nodes to retrieve arguments from the stack
@@ -834,7 +834,7 @@ void AlexTargetLowering::copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDVa
 
     // Create frame object.
     EVT PtrTy = getPointerTy(DAG.getDataLayout());
-    int FI = MFI->CreateFixedObject(FrameObjSize, FrameObjOffset, true);
+    int FI = MFI->CreateFixedObject(8/*FrameObjSize*/, FrameObjOffset, true);
     SDValue FIN = DAG.getFrameIndex(FI, PtrTy);
     InVals.push_back(FIN);
 
