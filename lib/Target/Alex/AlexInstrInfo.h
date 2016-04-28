@@ -66,7 +66,7 @@ namespace llvm {
     bool lowerPop(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerMov(MachineBasicBlock::iterator &MI, unsigned Dest, unsigned Src) const;
 
-    bool lowerLI16(MachineBasicBlock::iterator &MI, unsigned Reg, uint16_t Imm) const;
+    bool lowerLI24(MachineBasicBlock::iterator &MI, unsigned Reg, uint32_t Imm) const;
     bool lowerLI16(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
     bool lowerLIH16(MachineBasicBlock::iterator &MI, unsigned Reg, uint16_t Imm) const;
     bool lowerLIH16(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;

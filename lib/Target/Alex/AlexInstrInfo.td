@@ -9,12 +9,12 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
   let Size = 4;
 
   bits<8> Opcode = 0;
+  bits<24> imm24 = 0;
   bits<16> imm16 = 0;
 
   // Top 8 bits are the 'opcode' field
   let Inst{7-0} = Opcode;
-  let Inst{23-8} = imm16;
-  let Inst{31-24} = 0;
+  let Inst{31-8} = imm24;
 
   let OutOperandList = outs;
   let InOperandList  = ins;
@@ -22,9 +22,6 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
   let AsmString   = asmstr;
   let Pattern     = pattern;
   let Itinerary   = itin;
-
-  // TSFlags layout should be kept in sync with AlexInstrInfo.h.
-  //let TSFlags{3-0}   = FormBits;
 
   let DecoderNamespace = "Alex";
 
@@ -107,12 +104,12 @@ class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
-    bits<16> imm;
+    bits<24> imm;
 
   let Opcode = op;
 
   //let Inst{23-16} = 0;
-    let imm16 = imm;
+    let imm24 = imm;
 }
 
 //===- AlexInstrInfo.td - Target Description for Alex Target -*- tablegen -*-=//
@@ -176,6 +173,16 @@ def AlexMemAsmOperand : AsmOperandClass {
 // Instruction operand types
 
 // Signed Operand
+
+def simm8      : Operand<i32> {
+  let DecoderMethod= "DecodeSimm8";
+}
+
+def simm24      : Operand<i32> {
+  let DecoderMethod= "DecodeSimm24";
+}
+
+
 def simm16      : Operand<i32> {
   let DecoderMethod= "DecodeSimm16";
 }
@@ -193,7 +200,7 @@ def uimm16      : Operand<i32> {
 // Address operand
 def mem : Operand<iPTR> {
   let PrintMethod = "printMemOperand";
-  let MIOperandInfo = (ops Int32Regs, simm16);
+  let MIOperandInfo = (ops Int32Regs, simm24);
   let EncoderMethod = "getMemEncoding";
   let ParserMatchClass = AlexMemAsmOperand;
 }
@@ -234,6 +241,8 @@ def HI16 : SDNodeXForm<imm, [{
 
 // Node immediate fits as 16-bit sign extended on target immediate.
 // e.g. addi, andi
+def immSExt8   : PatLeaf<(imm), [{ return isInt<8>(N->getSExtValue()); }]>;
+def immSExt24  : PatLeaf<(imm), [{ return isInt<24>(N->getSExtValue()); }]>;
 def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
 def immSExt32  : PatLeaf<(imm), [{ return isInt<32>(N->getSExtValue()); }]>;
 //def a
