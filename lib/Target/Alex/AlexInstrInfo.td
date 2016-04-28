@@ -9,9 +9,12 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
   let Size = 4;
 
   bits<8> Opcode = 0;
+  bits<16> imm16 = 0;
 
   // Top 8 bits are the 'opcode' field
-  let Inst{31-24} = Opcode;
+  let Inst{7-0} = Opcode;
+  let Inst{23-8} = imm16;
+  let Inst{31-24} = 0;
 
   let OutOperandList = outs;
   let InOperandList  = ins;
@@ -39,7 +42,6 @@ class InstrPlain<bits<8> op, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<(outs), (ins), asmstr, pattern, itin>
 {
   let Opcode = op;
-  let Inst{23-0} = 0;
 }
 class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
@@ -48,20 +50,19 @@ class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Opcode = op;
 
-  let Inst{23-20} = ra;
-  let Inst{19-0} = 0;
+  //let Inst{23-20} = ra;
 }
 class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
-  bits<16> imm16;
+
 
   let Opcode = op;
 
-  let Inst{23-20} = ra;
-  let Inst{19-16} = 0;
-  let Inst{15-0}  = imm16;
+  //let Inst{23-20} = ra;
+  //let Inst{19-16} = 0;
+  //let Inst{15-0}  = imm16;
 }
 class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
@@ -71,22 +72,22 @@ class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Opcode = op;
 
-  let Inst{23-20} = ra;
-  let Inst{19-16} = rb;
-  let Inst{15-0}  = 0;
+  //let Inst{23-20} = ra;
+  //let Inst{19-16} = rb;
+  //let Inst{15-0}  = 0;
 }
 class InstrRRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<4>  rb;
-  bits<16> imm16;
+  //bits<16> imm16;
 
   let Opcode = op;
 
-  let Inst{23-20} = ra;
-  let Inst{19-16} = rb;
-  let Inst{15-0}  = imm16;
+  //let Inst{23-20} = ra;
+  //let Inst{19-16} = rb;
+  //let Inst{15-0}  = imm16;
 }
 class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
@@ -97,21 +98,21 @@ class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Opcode = op;
 
-  let Inst{23-20} = ra;
-  let Inst{19-16} = rb;
-  let Inst{15-12} = rc;
-  let Inst{11-0}  = 0;
+  //let Inst{23-20} = ra;
+  //let Inst{19-16} = rb;
+  //let Inst{15-12} = rc;
+  //let Inst{11-0}  = 0;
 }
 
 class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
-  bits<16> imm;
+    bits<16> imm;
 
   let Opcode = op;
 
-  let Inst{23-16} = 0;
-  let Inst{15-0} = imm;
+  //let Inst{23-16} = 0;
+    let imm16 = imm;
 }
 
 //===- AlexInstrInfo.td - Target Description for Alex Target -*- tablegen -*-=//
@@ -407,7 +408,7 @@ def DIViu   : ArithLogicRRI<0x0c, "diviu", udiv, uimm16, immZExt16, Int32Regs>;
 // 需要ori
 def ORi     : ArithLogicRRI<0x42, "ori",   or,   uimm16, immZExt16, Int32Regs>;
 
-def ADD     : ArithLogicRRR<0x01, "add",  add,  Int32Regs>;
+def ADD     : ArithLogicRRR<0x01, "add",  add,  Int32Regs, 1>;
 def SUB     : ArithLogicRRR<0x04, "sub",  sub,  Int32Regs>;
 def MUL     : ArithLogicRRR<0x07, "mul",  mul,  Int32Regs>;
 def DIV     : ArithLogicRRR<0x0a, "div",  sdiv, Int32Regs, 1>;
@@ -471,15 +472,15 @@ def LI32    : AlexPseudo<(outs Int32Regs:$ra), (ins simm32:$imm), "li32",
 
 /* Global Address/Jump table */
 
-def : Pat<(AlexHi tjumptable:$in), (LIh tjumptable:$in)>;
-def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
+//def : Pat<(AlexHi tjumptable:$in), (LIh tjumptable:$in)>;
+//def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
 //def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
 //              (ADDiu Int32Regs:$hi, tjumptable:$lo)>;
 
 def AlexGlobalWrapper    : SDNode<"AlexISD::GlobalWrapper", SDTIntUnaryOp>;
 
-def : Pat<(AlexGlobalWrapper tglobaladdr:$in),
-    (LI32 tglobaladdr:$in)>;
+//def : Pat<(AlexGlobalWrapper tglobaladdr:$in),
+//    (LI32 tglobaladdr:$in)>;
 def : Pat<(AlexGlobalWrapper tjumptable:$in),
     (LI32 tjumptable:$in)>;
 
@@ -566,8 +567,8 @@ def : Pat<(i32 immSExt32:$in),
           (LI32 imm:$in)>;
 
 /* Hi/Lo的加载的直接翻译 */
-def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
-def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
+//def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
+//def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
 //def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
 //          (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
 

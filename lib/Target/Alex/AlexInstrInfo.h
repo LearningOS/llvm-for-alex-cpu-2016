@@ -49,6 +49,10 @@ namespace llvm {
 
     bool lowerSelect(MachineBasicBlock::iterator &MI) const;
     bool lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned Opcode) const;
+    bool lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned Opcode,
+                            unsigned resultReg, unsigned lhsReg, unsigned rhsReg) const;
+    bool lowerArithLogicRRI(MachineBasicBlock::iterator &MI, unsigned Opcode,
+                            unsigned resultReg, unsigned srcReg, unsigned Imm) const;
 
     bool lowerV9Cmp(MachineBasicBlock::iterator &MI, unsigned Opcode) const;
     bool lowerV9Branch(MachineBasicBlock::iterator &MI, unsigned Opcode) const;
@@ -56,10 +60,18 @@ namespace llvm {
 
     bool lowerLoadFI(MachineBasicBlock::iterator &MI, int16_t FI, unsigned Reg) const;
     bool lowerPushR(MachineBasicBlock::iterator &MI, unsigned Reg) const;
+    bool lowerPushI(MachineBasicBlock::iterator &MI, unsigned Imm16, unsigned Flags = 0) const;
     bool lowerPopR(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerPush(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerPop(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerMov(MachineBasicBlock::iterator &MI, unsigned Dest, unsigned Src) const;
+
+    bool lowerLI16(MachineBasicBlock::iterator &MI, unsigned Reg, uint16_t Imm) const;
+    bool lowerLI16(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
+    bool lowerLIH16(MachineBasicBlock::iterator &MI, unsigned Reg, uint16_t Imm) const;
+    bool lowerLIH16(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
+    bool lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, uint32_t Imm) const;
+    bool lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
   };
 }
 
