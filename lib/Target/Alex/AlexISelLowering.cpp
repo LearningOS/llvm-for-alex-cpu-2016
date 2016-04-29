@@ -605,7 +605,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
         // emit ISD::STORE whichs stores the
         // parameter value to a stack Location
-        MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset(),
+        MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset() - 8,
                                              Chain, Arg, DL, false, DAG));
     }
 

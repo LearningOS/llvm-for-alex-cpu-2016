@@ -104,7 +104,7 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
     //   by adding the size of the stack:
     //   incoming argument, callee-saved register location or local variable.
     int64_t Offset;
-    Offset = spOffset;
+    Offset = spOffset + stackSize;
 
     Offset    += MI.getOperand(i+1).getImm();
 
@@ -112,7 +112,7 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
 
     // If MI is not a debug value, make sure Offset fits in the 16-bit immediate
     // field.
-    if (!MI.isDebugValue() && !isInt<16>(Offset)) {
+    if (!MI.isDebugValue() && !isInt<24>(Offset)) {
         assert("(!MI.isDebugValue() && !isInt<16>(Offset))");
     }
 

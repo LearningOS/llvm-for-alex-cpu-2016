@@ -69,7 +69,7 @@ namespace llvm {
 
     bool lowerLI24(MachineBasicBlock::iterator &MI, unsigned Reg, uint32_t Imm) const;
     bool lowerLI24(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
-    bool lowerLIH8(MachineBasicBlock::iterator &MI, unsigned Reg, uint16_t Imm) const;
+    bool lowerLIH8(MachineBasicBlock::iterator &MI, unsigned Reg, uint32_t Imm) const;
     bool lowerLIH8(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
     bool lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, uint32_t Imm) const;
     bool lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, const GlobalValue *GlobalAddr) const;
