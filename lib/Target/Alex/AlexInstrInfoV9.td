@@ -2,7 +2,8 @@
 /* V9Cpu的指令 */
 
 /* 访存指令 */
-def V9LL      : InstrI<0x0E, (outs), (ins simm24:$imm24), "v9ll\t$imm24", [], NoItinerary>;
+def V9LL      : InstrI<0x0e, (outs), (ins simm24:$imm24), "v9ll\t$imm24", [], NoItinerary>;
+def V9LX      : InstrI<0x1c, (outs), (ins simm24:$imm24), "v9lx\t$imm24", [], NoItinerary>;
 def V9LBL     : InstrI<0x26, (outs), (ins simm24:$imm24), "v9lbl\t$imm24", [], NoItinerary>;
 def V9LCL     : InstrI<0xac, (outs), (ins simm24:$imm24), "v9lcl\t$imm24", [], NoItinerary>;
 def V9LBA     : InstrPlain<0x3e, "v9lba", [], NoItinerary>;
@@ -47,7 +48,7 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
 }
 
 let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
-    def V9BNEZ    : InstrI<0x86, (outs), (ins brtarget16:$imm24), "v9bnz\tRA, $imm24", [], NoItinerary>;
+    def V9BNEZ    : InstrI<0x86, (outs), (ins brtarget16:$imm24), "v9bnez\tRA, $imm24", [], NoItinerary>;
     def V9JSRA    : InstrPlain<0x06, "v9jsra", [], NoItinerary>;
 }
 
@@ -57,9 +58,9 @@ def V9SUB      : InstrPlain<0x56, "v9sub", [], NoItinerary>;
 def V9MUL      : InstrPlain<0x59, "v9mul", [], NoItinerary>;
 def V9DIV      : InstrPlain<0x5c, "v9div", [], NoItinerary>;
 
-def V9ADDi     : InstrI<0x54, (outs), (ins simm24:$imm24), "v9addi", [], NoItinerary>;
-def V9SUBi     : InstrI<0x57, (outs), (ins simm24:$imm24), "v9subi", [], NoItinerary>;
-def V9MULi     : InstrI<0x5a, (outs), (ins simm24:$imm24), "v9muli", [], NoItinerary>;
+def V9ADDi     : InstrI<0x54, (outs), (ins simm24:$imm24), "v9addi\t$imm24", [], NoItinerary>;
+def V9SUBi     : InstrI<0x57, (outs), (ins simm24:$imm24), "v9subi\t$imm24", [], NoItinerary>;
+def V9MULi     : InstrI<0x5a, (outs), (ins simm24:$imm24), "v9muli\t$imm24", [], NoItinerary>;
 
 def V9LT      : InstrPlain<0x7e, "v9lt\tRA, RB", [], NoItinerary>;
 def V9GT      : InstrPlain<0x81, "v9gt\tRA, RB", [], NoItinerary>;
@@ -84,9 +85,10 @@ def V9LIh8_PS : AlexPseudo<(outs Int32Regs:$ra), (ins simm24:$imm24),
 def V9LI32_PS : AlexPseudo<(outs Int32Regs:$ra), (ins simm24:$imm),
                 "v9li32\t$ra, $imm",
                 [(set Int32Regs:$ra, (AlexLI32 immSExt32:$imm))]>;
-def V9ADDi_PS : AlexPseudo<(outs Int32Regs:$ra), (ins Int32Regs:$rb, simm24:$imm),
-                "v9addi_ps\t$ra, $rb, $imm",
-                []>;
+
+def V9ADDi_PS : AlexPseudo<(outs Int32Regs:$ra), (ins Int32Regs:$rb, simm24:$imm24),
+                "v9addi_ps\t$ra, $rb, $imm24",
+                [(set Int32Regs:$ra, (add Int32Regs:$rb, immSExt24:$imm24))]>;
 
 defm V9LW_PS   : LoadM32<0,  "v9lw_ps",  load_a, 1>;
 defm V9SW_PS   : StoreM32<0,  "v9sw_ps",  store_a, 1>;
@@ -139,7 +141,7 @@ def : Pat<(AlexHi tglobaladdr:$in), (V9LIh8_PS tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (V9LI24_PS tglobaladdr:$in)>;
 
 /* Alex-machine的几条指令, 以后会删除 */
-defm LW     : LoadM32<0x2d,  "lw",  load_a>;
-defm SW     : StoreM32<0x34, "sw",  store_a>;
+//defm LW     : LoadM32<0x2d,  "lw",  load_a>;
+//defm SW     : StoreM32<0x34, "sw",  store_a>;
 def : Pat<(i32 addr:$in),
-          (LW mem:$in)>;
+          (V9LW_PS mem:$in)>;

@@ -60,6 +60,9 @@ namespace llvm {
 
     bool lowerLoadFI(MachineBasicBlock::iterator &MI, int32_t FI, unsigned Reg) const;
     bool lowerStoreFI(MachineBasicBlock::iterator &MI, int32_t FI, unsigned Reg) const;
+    bool lowerLoadMem(MachineBasicBlock::iterator &MI, unsigned Dst, unsigned Base, int Offset) const;
+    //bool lowerLoadMem(MachineBasicBlock::iterator &MI, unsigned Dst, unsigned Base, int Offset) const;
+
     bool lowerPushR(MachineBasicBlock::iterator &MI, unsigned Reg) const;
     bool lowerPushI(MachineBasicBlock::iterator &MI, unsigned Imm16, unsigned Flags = 0) const;
     bool lowerPopR(MachineBasicBlock::iterator &MI, unsigned Reg) const;

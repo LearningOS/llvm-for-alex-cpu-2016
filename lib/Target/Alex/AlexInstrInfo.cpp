@@ -133,10 +133,10 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 
         }
         else if (Operand2.getType() == MachineOperand::MO_Immediate) {
-            auto imm16 = static_cast<uint16_t>(Operand2.getImm() & 0xFFFF);
-            lowerArithLogicRRI(MI, MI->getDesc().getOpcode(), resultReg, srcReg, imm16);
+            auto imm24 = static_cast<uint32_t>(Operand2.getImm() & 0xFFFFFF);
+            lowerArithLogicRRI(MI, MI->getDesc().getOpcode(), resultReg, srcReg, imm24);
         }
-
+        break;
     }
 
     case Alex::V9LT_PS:
@@ -159,8 +159,22 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
         break;
     case Alex::V9LW_PS: {
         unsigned Dest = MI->getOperand(0).getReg();
-        auto FI = static_cast<int32_t>(MI->getOperand(2).getImm());
-        ret = lowerLoadFI(MI, FI, Dest);
+        unsigned Base = MI->getOperand(1).getReg();
+        if (Base == Alex::SP) {
+            auto FI = static_cast<int32_t>(MI->getOperand(2).getImm());
+            ret = lowerLoadFI(MI, FI, Dest);
+        }
+        else {
+            auto Operand2 = MI->getOperand(2);
+            if (Operand2.getType() == MachineOperand::MO_GlobalAddress) {
+                //ret = lowerLoadMem(MI, Dest, Base, Operand2.getGlobal());
+            }
+            else {
+                auto Offset = static_cast<int32_t>(MI->getOperand(2).getImm());
+                ret = lowerLoadMem(MI, Dest, Base, Offset);
+            }
+        }
+
         break;
     }
     case Alex::V9SW_PS: {
@@ -311,7 +325,7 @@ bool AlexInstrInfo::lowerCallPseudo(MachineBasicBlock::iterator &MI) const {
         // 这里不用备份T0, 由于T0用于返回地址, 此处LLVM会标记T0为LiveIn
         FuncAddrReg = Alex::S0;
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIh), FuncAddrReg).addGlobalAddress(MI->getOperand(0).getGlobal(), 0, AlexII::MO_ABS_HI);
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), FuncAddrReg).addReg(FuncAddrReg).addGlobalAddress(MI->getOperand(0).getGlobal(), 0, AlexII::MO_ABS_LO);
+        //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), FuncAddrReg).addReg(FuncAddrReg).addGlobalAddress(MI->getOperand(0).getGlobal(), 0, AlexII::MO_ABS_LO);
     }
     else {
         // temporary restore t0, t1, t2 in case that it uses t0~t2 as call addr
@@ -403,7 +417,7 @@ bool AlexInstrInfo::lowerSExtPseudo(MachineBasicBlock::iterator &MI) const {
     case Alex::SEXT_INREG_1: {
         auto targetReg = MI->getOperand(0).getReg();
         auto srcReg = MI->getOperand(1).getReg();
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), targetReg).addReg(srcReg).addImm(0);
+        //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), targetReg).addReg(srcReg).addImm(0);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SHL), targetReg).addReg(targetReg).addImm(31);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SAR), targetReg).addReg(targetReg).addImm(31);
         printf("sext inreg 1 ");
@@ -417,7 +431,7 @@ bool AlexInstrInfo::lowerSExtPseudo(MachineBasicBlock::iterator &MI) const {
         printf("sext inreg 8 ");
         auto targetReg = MI->getOperand(0).getReg();
         auto srcReg = MI->getOperand(1).getReg();
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), targetReg).addReg(srcReg).addImm(0);
+        //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), targetReg).addReg(srcReg).addImm(0);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SHL), targetReg).addReg(targetReg).addImm(24);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SAR), targetReg).addReg(targetReg).addImm(24);
         for (unsigned i = 0; i < MI->getNumOperands(); ++i) {
@@ -428,7 +442,7 @@ bool AlexInstrInfo::lowerSExtPseudo(MachineBasicBlock::iterator &MI) const {
     case Alex::SEXT_INREG_16: {
         auto targetReg = MI->getOperand(0).getReg();
         auto srcReg = MI->getOperand(1).getReg();
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), targetReg).addReg(srcReg).addImm(0);
+        //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), targetReg).addReg(srcReg).addImm(0);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SHL), targetReg).addReg(targetReg).addImm(16);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SAR), targetReg).addReg(targetReg).addImm(16);
         printf("sext inreg 16");
@@ -455,8 +469,8 @@ bool AlexInstrInfo::lowerSelect(MachineBasicBlock::iterator &MI) const {
     BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::MUL), targetReg).addReg(trueReg).addReg(conditionReg);
 
     // push true
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(trueReg).addReg(Alex::SP).addImm(0);
+    //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
+    //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SW)).addReg(trueReg).addReg(Alex::SP).addImm(0);
     // condition = !condition
     BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LI), trueReg).addImm(0xFFFF);
     BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::XOR), conditionReg).addReg(conditionReg).addReg(trueReg);
@@ -474,8 +488,8 @@ bool AlexInstrInfo::lowerSelect(MachineBasicBlock::iterator &MI) const {
     BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::AND), conditionReg).addReg(conditionReg).addReg(trueReg);
 
     // pop true
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), trueReg).addReg(Alex::SP).addImm(0);
-    BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
+    //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LW), trueReg).addReg(Alex::SP).addImm(0);
+    //BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(4);
     return true;
 }
 
@@ -494,8 +508,10 @@ bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned
     if (!(resultReg == Alex::S0 && lhsReg == Alex::S0 && rhsReg == Alex::S1)) {
         lowerPushR(MI, Alex::S0);
         lowerPushR(MI, Alex::S1);
-        lowerMov(MI, Alex::S0, lhsReg);
-        lowerMov(MI, Alex::S1, rhsReg);
+        lowerPushR(MI, lhsReg);
+        lowerPushR(MI, rhsReg);
+        lowerPopR(MI, Alex::S0);
+        lowerPopR(MI, Alex::S1);
     }
 
     switch(Opcode) {
@@ -527,33 +543,50 @@ bool AlexInstrInfo::lowerArithLogicRRR(MachineBasicBlock::iterator &MI, unsigned
 bool AlexInstrInfo::lowerArithLogicRRI(MachineBasicBlock::iterator &MI, unsigned Opcode,
                                        unsigned resultReg, unsigned srcReg, unsigned Imm) const {
     auto &MBB = *MI->getParent();
-
-    lowerPushR(MI, Alex::S0);
-    lowerPushR(MI, Alex::S1);
-    lowerMov(MI, Alex::S0, srcReg);
-    lowerPushI(MI, Imm);
-    lowerPopR(MI, Alex::S1);
-
+    auto Imm24 = Imm & 0xFFFFFF;
+    unsigned alexOpc;
     switch(Opcode) {
     default:
         return false;
-    case Alex::ADD:
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9ADD));
+    case Alex::V9ADDi_PS:
+        alexOpc = Alex::V9ADDi;
         break;
-    case Alex::SUB:
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9SUB));
-        break;
-    case Alex::MUL:
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9MUL));
-        break;
-    case Alex::DIV:
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9DIV));
-        break;
+    //case Alex::V9SUBi_PS:
+    //    alexOpc = Alex::V9SUBi;
+    //    break;
+    //case Alex::V9MULi_PS:
+    //    alexOpc = Alex::V9MULi;
+    //    break;
+    //case Alex::V9DIVi_PS:
+    //    alexOpc = Alex::V9DIVi;
+    //    break;
     }
 
-    lowerMov(MI, resultReg, Alex::S0);
-    lowerPopR(MI, Alex::S1);
-    lowerPopR(MI, Alex::S0);
+    if (resultReg == Alex::S0 && srcReg == Alex::S0) {
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(alexOpc)).addImm(Imm24);
+    }
+    else if (resultReg == Alex::S0 /*&& srcReg != Alex::S0*/) {
+        lowerMov(MI, Alex::S0, srcReg);
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Opcode)).addImm(Imm24);
+    }
+    else if(/*resultReg != Alex::S0 &&*/ srcReg != Alex::S0) {
+        lowerPushR(MI, Alex::S0);
+        lowerMov(MI, Alex::S0, srcReg);
+
+        lowerMov(MI, Alex::S0, srcReg);
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Opcode)).addImm(Imm24);
+
+        lowerMov(MI, resultReg, Alex::S0);
+        lowerPopR(MI, Alex::S0);
+    }
+    else /* resultReg != Alex::S0 && srcReg == Alex::S0 */ {
+        lowerPush(MI, Alex::S0);
+
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Opcode)).addImm(Imm24);
+
+        lowerMov(MI, resultReg, Alex::S0);
+        lowerPopR(MI, Alex::S0);
+    }
 
     return true;
 }
@@ -635,10 +668,10 @@ bool AlexInstrInfo::lowerV9Branch(MachineBasicBlock::iterator &MI, unsigned int 
     lowerPush(MI, rhsReg);
 
     // pop RA
-    lowerPop(MI, Alex::S0);
-    // pop RB
     lowerPop(MI, Alex::S1);
-    // RA = RA < RB
+    // pop RB
+    lowerPop(MI, Alex::S0);
+    // RA = $lhs ?? $rhs
 
     unsigned V9Opcode = 0;
     switch(Opcode) {
@@ -739,6 +772,53 @@ bool AlexInstrInfo::lowerLoadFI(MachineBasicBlock::iterator &MI, int32_t FI, uns
 
     return true;
 }
+
+
+bool AlexInstrInfo::lowerLoadMem(MachineBasicBlock::iterator &MI, unsigned Dst, unsigned Base, int Offset) const {
+    auto &MBB = *MI->getParent();
+    if (Dst == Alex::S0 && Base == Alex::S0) {
+        lowerPushR(MI, Alex::S1);
+
+        lowerLI32(MI, Alex::S1, static_cast<uint32_t>(Offset));
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9ADD));
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9LX)).addImm(0);
+
+        lowerPopR(MI, Alex::S1);
+    }
+    else if (Dst == Alex::S0 && Base != Alex::S0 && Base != Alex::S1) {
+        lowerPushR(MI, Alex::S1);
+
+        lowerLI32(MI, Alex::S0, static_cast<uint32_t>(Offset));
+        lowerMov(MI, Alex::S1, Base);
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9ADD));
+
+        lowerPopR(MI, Alex::S1);
+
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9LX)).addImm(0);
+    }
+    else if (Dst == Alex::S0 && Base == Alex::S1) {
+        lowerLI32(MI, Alex::S0, static_cast<uint32_t>(Offset));
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9ADD));
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9LX)).addImm(0);
+    }
+    else /* Dst != Alex::S0 */ {
+        lowerPushR(MI, Alex::S0);
+        lowerPushR(MI, Alex::S1);
+        lowerPushR(MI, Base);
+
+        lowerMov(MI, Alex::S0, Base);
+        lowerLI32(MI, Alex::S1, Offset);
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9ADD));
+        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::V9LX)).addImm(0);
+
+        lowerPopR(MI, Base);
+        lowerPopR(MI, Alex::S1);
+        lowerPopR(MI, Alex::S0);
+    }
+    return true;
+}
+
+
 bool AlexInstrInfo::lowerStoreFI(MachineBasicBlock::iterator &MI, int32_t FI, unsigned int Reg) const {
     auto &MBB = *MI->getParent();
 
@@ -760,7 +840,6 @@ bool AlexInstrInfo::lowerStoreFI(MachineBasicBlock::iterator &MI, int32_t FI, un
 
     return true;
 }
-
 
 bool AlexInstrInfo::lowerPushR(MachineBasicBlock::iterator &MI, unsigned Reg) const {
     auto &MBB = *MI->getParent();
@@ -843,9 +922,12 @@ bool AlexInstrInfo::lowerLIH8(MachineBasicBlock::iterator &MI, unsigned Reg, uin
     if (Reg == Alex::S0) {
         // reg = reg + Imm << 24
         lowerPushR(MI, Alex::S0);
+
+        // b = Imm & 0xFF000000
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LI)).addImm((Imm >> 24) & 0xFF);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LIh)).addImm(0);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LBA));
+
         lowerPopR(MI, Alex::S0);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD));
     }
@@ -860,6 +942,7 @@ bool AlexInstrInfo::lowerLIH8(MachineBasicBlock::iterator &MI, unsigned Reg, uin
         lowerPopR(MI, Alex::S0);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD));
 
+        lowerMov(MI, Reg, Alex::S0);
         lowerPopR(MI, Alex::S0);
     }
 
@@ -888,6 +971,7 @@ bool AlexInstrInfo::lowerLIH8(MachineBasicBlock::iterator &MI, unsigned Reg, con
         lowerPopR(MI, Alex::S0);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD));
 
+        lowerMov(MI, Reg, Alex::S0);
         lowerPopR(MI, Alex::S0);
     }
     printf("v9 lih9 pseudo: lih global address\n");
@@ -901,13 +985,13 @@ bool AlexInstrInfo::lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, uin
         //lowerLIH8(MI, Alex::S0, static_cast<uint16_t>((Imm >> 24) & 0xFF));
         lowerLI24(MI, Reg, static_cast<uint16_t>((Imm>>24) & 0xFF));
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LIh)).addImm(0);
-        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD)).addImm(Imm & 0xFFFFFF);
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADDi)).addImm(Imm & 0xFFFFFF);
     }
     else {
         lowerPush(MI, Alex::S0);
         lowerLI24(MI, Reg, static_cast<uint16_t>((Imm>>24) & 0xFF));
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LIh)).addImm(0);
-        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD)).addImm(Imm & 0xFFFFFF);
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADDi)).addImm(Imm & 0xFFFFFF);
         lowerMov(MI, Reg, Alex::S0);
         lowerPopR(MI, Alex::S0);
     }
@@ -921,20 +1005,21 @@ bool AlexInstrInfo::lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, con
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LI)).addGlobalAddress(
                 GlobalAddr, 0, AlexII::MO_ABS_HI);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LIh)).addImm(0);
-        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD)).addGlobalAddress(GlobalAddr, AlexII::MO_ABS_LO);
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADDi)).addGlobalAddress(GlobalAddr, AlexII::MO_ABS_LO);
     }
     else {
         lowerPush(MI, Alex::S0);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LI)).addGlobalAddress(
                 GlobalAddr, 0, AlexII::MO_ABS_HI);
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9LIh)).addImm(0);
-        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADD)).addGlobalAddress(GlobalAddr, AlexII::MO_ABS_LO);
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::V9ADDi)).addGlobalAddress(GlobalAddr, AlexII::MO_ABS_LO);
         lowerMov(MI, Reg, Alex::S0);
         lowerPopR(MI, Alex::S0);
     }
 
     return true;
 }
+
 
 
 

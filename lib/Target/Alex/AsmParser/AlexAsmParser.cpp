@@ -332,7 +332,7 @@ void AlexAsmParser::expandLoadImm(MCInst &Inst, SMLoc IDLoc,
   } else if ( ImmValue < 0 && ImmValue >= -32768) {
     // for -32768 <= j < 0.
     // li d,j => addiu d,$zero,j
-    tmpInst.setOpcode(Alex::ADDiu); //TODO:no ADDiu64 in td files?
+    //tmpInst.setOpcode(Alex::ADDiu); //TODO:no ADDiu64 in td files?
     tmpInst.addOperand(MCOperand::createReg(RegOp.getReg()));
     tmpInst.addOperand(
             MCOperand::createReg(Alex::R0));
@@ -369,7 +369,7 @@ void AlexAsmParser::expandLoadAddressReg(MCInst &Inst, SMLoc IDLoc,
   if ( -32768 <= ImmValue && ImmValue <= 32767) {
     // for -32768 <= j < 32767.
     //la d,j(s) => addiu d,s,j
-    tmpInst.setOpcode(Alex::ADDiu); //TODO:no ADDiu64 in td files?
+    //tmpInst.setOpcode(Alex::ADDiu); //TODO:no ADDiu64 in td files?
     tmpInst.addOperand(MCOperand::createReg(DstRegOp.getReg()));
     tmpInst.addOperand(MCOperand::createReg(SrcRegOp.getReg()));
     tmpInst.addOperand(MCOperand::createImm(ImmValue));
@@ -409,7 +409,7 @@ void AlexAsmParser::expandLoadAddressImm(MCInst &Inst, SMLoc IDLoc,
   if ( -32768 <= ImmValue && ImmValue <= 32767) {
     // for -32768 <= j < 32767.
     //la d,j => addiu d,$zero,j
-    tmpInst.setOpcode(Alex::ADDiu);
+    //tmpInst.setOpcode(Alex::ADDiu);
     tmpInst.addOperand(MCOperand::createReg(RegOp.getReg()));
     tmpInst.addOperand(
             MCOperand::createReg(Alex::R0));

@@ -84,6 +84,13 @@
                 - load RA, SP\[0\]
                 - pop $ra
                 - LEV
+            - load全局变量
+                - li32 RA, Offset
+                - mov RB, Base
+                - add
+                - lx 0
+            - load/store frame index
+                -应该是4bytes对齐
             - ~~le, ge, ble, bge~~, 以及他们的无符号指令
             - ~~j~~
                 - jmp

@@ -406,8 +406,8 @@ def NOP     : InstrPlain<0x00, "nop", [], NoItinerary>;
 
 /* 算数逻辑指令 */
 
-def ADDi    : ArithLogicRRI<0x02, "addi",  add,  simm16, immSExt16, Int32Regs>;
-def ADDiu   : ArithLogicRRI<0x03, "addiu", add,  uimm16, immZExt16, Int32Regs>;
+//def ADDi    : ArithLogicRRI<0x02, "addi",  add,  simm16, immSExt16, Int32Regs>;
+//def ADDiu   : ArithLogicRRI<0x03, "addiu", add,  uimm16, immZExt16, Int32Regs>;
 def SUBi    : ArithLogicRRI<0x05, "subi",  sub,  simm16, immSExt16, Int32Regs>;
 def MULi    : ArithLogicRRI<0x08, "muli",  mul,  simm16, immSExt16, Int32Regs>;
 def MULiu   : ArithLogicRRI<0x09, "muliu", mul,  uimm16, immZExt16, Int32Regs>;
@@ -596,14 +596,14 @@ def : Pat<(i32 immSExt32:$in),
 //          (BNEZ (NE Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 
 /* 无符号分支指令的直接翻译 */
-def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (GTU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETULT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (LTU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETUGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (GEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
-def : Pat<(brcc SETULE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
-          (BNEZ (LEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETUGT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (GTU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETULT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (LTU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETUGE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (GEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
+//def : Pat<(brcc SETULE, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),
+//          (BNEZ (LEU Int32Regs:$ra, Int32Regs:$rb), brtarget16:$imm16)>;
 
 /* "?:"操作符会生成select指令 */
 def SELECT : AlexPseudo<(outs Int32Regs:$rv),
@@ -612,10 +612,10 @@ def SELECT : AlexPseudo<(outs Int32Regs:$rv),
                         [(set Int32Regs:$rv, (select Int32Regs:$ra, Int32Regs:$rb, Int32Regs:$rc))]>;
 
 /* 多种加法的直接翻译 */
-def : Pat<(adde Int32Regs:$ra, immSExt16:$imm),
-          (ADDi Int32Regs:$ra, simm16:$imm)>;
-def : Pat<(addc Int32Regs:$ra, immSExt16:$imm),
-          (ADDi Int32Regs:$ra, simm16:$imm)>;
+//def : Pat<(adde Int32Regs:$ra, immSExt16:$imm),
+//          (ADDi Int32Regs:$ra, simm16:$imm)>;
+//def : Pat<(addc Int32Regs:$ra, immSExt16:$imm),
+//          (ADDi Int32Regs:$ra, simm16:$imm)>;
 
 /* 符号扩展伪指令 */
 def SEXT_INREG_1  : AlexPseudo<(outs Int32Regs:$rb), (ins Int32Regs:$ra), "sext_inreg\t$rb, $ra, 1",
