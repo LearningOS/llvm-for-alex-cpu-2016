@@ -179,8 +179,16 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
     }
     case Alex::V9SW_PS: {
         unsigned Src = MI->getOperand(0).getReg();
-        auto FI = static_cast<int32_t>(MI->getOperand(2).getImm());
-        lowerStoreFI(MI, FI, Src);
+        unsigned Base = MI->getOperand(1).getReg();
+        if (Base == Alex::SP) {
+            auto FI = static_cast<int32_t>(MI->getOperand(2).getImm());
+            lowerStoreFI(MI, FI, Src);
+        }
+        else {
+            auto Offset = static_cast<int32_t>(MI->getOperand(2).getImm());
+            ret = lowerStoreMem(MI, Src, Base, Offset);
+        }
+
         break;
     }
     case Alex::PUSHr: {
@@ -274,6 +282,35 @@ void AlexInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBloc
 //        BuildMI(MBB, I, DL, get(Alex::V9SL)).addImm(FI).addReg(Alex::S0, getKillRegState(isKill));
 //        lowerPop(I, Alex::S0);
 //    }
+    MachineInstr &MI = *I;
+    MachineFunction &MF = *MI.getParent()->getParent();
+    MachineFrameInfo *MFI = MF.getFrameInfo();
+
+    unsigned i = 0;
+    while (!MI.getOperand(i).isFI()) {
+        ++i;
+        assert(i < MI.getNumOperands() &&
+               "Instr doesn't have FrameIndex operand!");
+    }
+
+
+    int FrameIndex = MI.getOperand(i).getIndex();
+    uint64_t stackSize = MF.getFrameInfo()->getStackSize();
+    int64_t spOffset = MF.getFrameInfo()->getObjectOffset(FrameIndex);
+
+    const std::vector<CalleeSavedInfo> &CSI = MFI->getCalleeSavedInfo();
+    int MinCSFI = 0;
+    int MaxCSFI = -1;
+
+    if (CSI.size()) {
+        MinCSFI = CSI[0].getFrameIdx();
+        MaxCSFI = CSI[CSI.size() - 1].getFrameIdx();
+    }
+
+    int64_t Offset;
+    Offset = spOffset + stackSize;
+
+
     lowerStoreFI(I, FI, SrcReg);
 }
 
@@ -764,7 +801,7 @@ bool AlexInstrInfo::lowerLoadFI(MachineBasicBlock::iterator &MI, int32_t FI, uns
     }
     else {
         lowerPush(MI, Alex::S0);
-        BuildMI(MBB, MI, DL, get(Alex::V9LL)).addImm(FI+8);
+        BuildMI(MBB, MI, DL, get(Alex::V9LL)).addImm(FI+8); // frame alignment should be 4
         lowerPush(MI, Alex::S0);
         lowerPop(MI, Reg);
         lowerPop(MI, Alex::S0);
@@ -825,6 +862,7 @@ bool AlexInstrInfo::lowerStoreFI(MachineBasicBlock::iterator &MI, int32_t FI, un
     //if (FI % 8 != 0) {
     //    llvm_unreachable("fi unaligned");
     //}
+    printf("lower store fi %d\n", FI);
 
     DebugLoc DL;
     if (MI != MBB.end()) DL = MI->getDebugLoc();
@@ -834,7 +872,7 @@ bool AlexInstrInfo::lowerStoreFI(MachineBasicBlock::iterator &MI, int32_t FI, un
     else {
         lowerPush(MI, Alex::S0);
         lowerMov(MI, Alex::S0, Reg);
-        BuildMI(MBB, MI, DL, get(Alex::V9SL)).addImm(FI+8);
+        BuildMI(MBB, MI, DL, get(Alex::V9SL)).addImm(FI+8); // frame alignment 4
         lowerPop(MI, Alex::S0);
     }
 
@@ -1019,6 +1057,13 @@ bool AlexInstrInfo::lowerLI32(MachineBasicBlock::iterator &MI, unsigned Reg, con
 
     return true;
 }
+
+bool AlexInstrInfo::lowerStoreMem(MachineBasicBlock::iterator &MI, unsigned Src, unsigned Base, int Offset) const {
+    llvm_unreachable("lower store mem ");
+    return false;
+}
+
+
 
 
 

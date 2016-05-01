@@ -21,10 +21,10 @@
         - ~~不同长度整数转换~~
         - 无符号整数被当成有符号(still exists?)
         - long long乘法, 目前只能高位是0
-        - 8位/1位整数符号扩展
-        - AlexInstrLowering.cpp有一些未翻译的LLVM IR
+        - ~~8位/1位整数符号扩展~~
+        - ~~AlexInstrLowering.cpp有一些未翻译的LLVM IR~~
         - AlexInstrInfo::InsertBranch not implemented
-        - Function Epologue
+        - Function Epilogue
     - 编译器目标代码生成模块
         - 检查每条指令的二进制代码是否正确
         - ~~opcode > 7位的指令暂时生成错误~~
