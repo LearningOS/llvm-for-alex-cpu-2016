@@ -3,7 +3,7 @@
 
 #include "llvm/Target/TargetFrameLowering.h"
 
-constexpr int AlexStackAlignment = 8;
+constexpr int AlexStackAlignment = 4;
 
 namespace llvm {
   class AlexSubtarget;

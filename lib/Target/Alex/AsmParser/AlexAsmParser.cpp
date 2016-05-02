@@ -498,16 +498,9 @@ int AlexAsmParser::matchRegisterName(StringRef Name) {
           .Case("fp",  Alex::FP)
           .Case("sp",  Alex::SP)
           .Case("lr",  Alex::LR)
-//          .Case("pc",  Alex::PC)
-//          .Case("hi",  Alex::HI)
-//          .Case("lo",  Alex::LO)
-//          .Case("epc", Alex::EPC)
           .Default(-1);
 
-  if (CC != -1)
-    return CC;
-
-  return -1;
+   return CC;
 }
 
 unsigned AlexAsmParser::getReg(int RC,int RegNo) {

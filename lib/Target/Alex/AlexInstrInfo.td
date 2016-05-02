@@ -29,7 +29,7 @@ class AlexInst<dag outs, dag ins, string asmstr, list<dag> pattern,
 }
 
 // Alex Pseudo Instructions Format
-class AlexPseudo<dag outs, dag ins, string asmstr, list<dag> pattern>:
+class AlexPseudo<dag outs, dag ins, string asmstr, list<dag> pattern = []>:
       AlexInst<outs, ins, asmstr, pattern, NoItinerary> {
   let isCodeGenOnly = 1;
   let isPseudo = 1;
@@ -322,7 +322,8 @@ class CompareRRR<bits<8> op, string instr_asm, PatFrag CmpNode, RegisterClass RC
 /* 内存访问指令模板 */
 class FMem<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
           InstrItinClass itin>: InstrRRI<op, outs, ins, asmstr, pattern, itin> {
-  bits<16> addr;
+  bits<20> addr;
+  let rb{3-0} = addr{19-16};
   let Inst{15-0}  = addr{15-0};
   let DecoderMethod = "DecodeMem";
 }
@@ -468,6 +469,9 @@ def LIh     : InstrRI<0x33, (outs Int32Regs:$ra), (ins simm16:$imm16),
 def LI32    : AlexPseudo<(outs Int32Regs:$ra), (ins simm32:$imm), "li32",
             [(set Int32Regs:$ra, (AlexLI32 immSExt32:$imm))]>;
 
+def CombineLoHiRI : AlexPseudo<(outs Int32Regs:$ra),
+            (ins Int32Regs:$rb, simm16:$imm),
+            "combine_lo_hi_ri\t$ra, $rb, $imm">;
 
 /* Global Address/Jump table */
 
@@ -588,8 +592,8 @@ def : Pat<(i32 immSExt32:$in),
 /* Hi/Lo的加载的直接翻译 */
 def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
-def : Pat<(add Int32Regs:$hi, (AlexLo tglobaladdr:$lo)),
-          (ADDiu Int32Regs:$hi, tglobaladdr:$lo)>;
+def : Pat<(add Int32Regs:$lo, (AlexHi tglobaladdr:$hi)),
+          (CombineLoHiRI Int32Regs:$lo, tglobaladdr:$hi)>;
 
 /* 普通有符号比较的分支指令的直接翻译 */
 def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),

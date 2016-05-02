@@ -42,6 +42,13 @@ bool AlexDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, S
     EVT ValTy = Addr.getValueType();
     SDLoc DL(Addr);
 
+    // if Address is FI, get the TargetFrameIndex.
+    if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
+        Base   = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+        Offset = CurDAG->getTargetConstant(0, DL, ValTy);
+        return true;
+    }
+
     // If Parent is an unaligned f32 load or store, select a (base + index)
     // floating point load/store instruction (luxc1 or suxc1).
     const LSBaseSDNode* LS = 0;
@@ -73,12 +80,7 @@ bool AlexDAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, S
     }
 
 
-    // if Address is FI, get the TargetFrameIndex.
-    if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
-        Base   = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
-        Offset = CurDAG->getTargetConstant(0, DL, ValTy);
-        return true;
-    }
+
 
     Base   = Addr;
     Offset = CurDAG->getTargetConstant(0, DL, ValTy);

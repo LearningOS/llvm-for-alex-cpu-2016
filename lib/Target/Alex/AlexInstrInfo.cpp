@@ -52,7 +52,7 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 //@expandPostRAPseudo-body
     MachineBasicBlock &MBB = *MI->getParent();
 
-    switch(MI->getDesc().getOpcode()) {
+    switch (MI->getDesc().getOpcode()) {
     default:
         return false;
     case Alex::RetLR:
@@ -99,7 +99,16 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
     case Alex::SELECT:
         lowerSelect(MI);
         break;
+    case Alex::CombineLoHiRI: {
+        auto Dest = MI->getOperand(0).getReg();
+        auto Src = MI->getOperand(1).getReg();          // lo
+        auto GlobalAddress = MI->getOperand(2).getGlobal(); // hi
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::ADDiu), Dest).addReg(Src).addImm(0);
+        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::LIh), Dest).addGlobalAddress(GlobalAddress, 0, AlexII::MO_ABS_HI);
+        break;
     }
+    }
+
 
     MBB.erase(MI);
     return true;

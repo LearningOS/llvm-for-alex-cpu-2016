@@ -315,8 +315,8 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
         assert(VA.isMemLoc());
 
         // The stack pointer offset is relative to the caller stack frame.
-        int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8,
-                                        VA.getLocMemOffset(), true);
+        int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8 /* Skip Saved frame pointer and return address */,
+                                        VA.getLocMemOffset() + 8, true);
 
         // Create load nodes to retrieve arguments from the stack
         SDValue FIN = dag.getFrameIndex(FI, getPointerTy(dag.getDataLayout()));
@@ -593,7 +593,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
         // emit ISD::STORE whichs stores the
         // parameter value to a stack Location
-        MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset(),
+        MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset() - 4,
                                              Chain, Arg, DL, false, DAG));
     }
 
@@ -699,7 +699,10 @@ AlexTargetLowering::passArgOnStack(SDValue StackPtr, unsigned Offset,
                                  getPointerTy(DAG.getDataLayout()),
                                  StackPtr,
                                  DAG.getIntPtrConstant(Offset, DL));
-    return DAG.getStore(Chain, DL, Arg, PtrOff, MachinePointerInfo(), false,
+    auto AddSP = DAG.getCopyToReg(Chain, DL, Alex::SP, PtrOff);
+
+    auto NewSP = DAG.getCopyFromReg(AddSP, DL, Alex::SP, getPointerTy(DAG.getDataLayout()));
+    return DAG.getStore(AddSP, DL, Arg, NewSP, MachinePointerInfo(), false,
                         false, 0);
 }
 
@@ -969,13 +972,11 @@ AlexTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
             if (VT == MVT::i32 || VT == MVT::i16 || VT == MVT::i8) {
                 return std::make_pair(0U, &Alex::Int32RegsRegClass);
             }
-            if (VT == MVT::i64)
-                return std::make_pair(0U, &Alex::Int32RegsRegClass);
             // This will generate an error message
             return std::make_pair(0u, static_cast<const TargetRegisterClass*>(0));
         case 'c': // register suitable for indirect jump
             if (VT == MVT::i32)
-                return std::make_pair((unsigned)Alex::T0, &Alex::Int32RegsRegClass);
+                return std::make_pair(0U, &Alex::Int32RegsRegClass);
             assert("Unexpected type.");
         }
     }
