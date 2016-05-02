@@ -26,9 +26,11 @@ void AlexFrameLowering::determineCalleeSaves(MachineFunction &MF,
     TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
     //Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
     //MachineRegisterInfo& MRI = MF.getRegInfo();
-//    SavedRegs.set(Alex::S0);
-//    SavedRegs.set(Alex::S1);
-//    SavedRegs.set(Alex::S2);
+    SavedRegs.set(Alex::S0);
+    SavedRegs.set(Alex::S1);
+    SavedRegs.set(Alex::S2);
+    SavedRegs.set(Alex::S3);
+    SavedRegs.set(Alex::S4);
 
     return;
 }
