@@ -35,14 +35,14 @@ class AlexPseudo<dag outs, dag ins, string asmstr, list<dag> pattern>:
   let isPseudo = 1;
 }
 
-class InstrPlain<bits<8> op, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<(outs), (ins), asmstr, pattern, itin>
+class InstrPlain<bits<8> op, string asmstr, list<dag> pattern = [],
+         InstrItinClass itin = NoItinerary>: AlexInst<(outs), (ins), asmstr, pattern, itin>
 {
   let Opcode = op;
   let Inst{23-0} = 0;
 }
-class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
+class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern = [],
+         InstrItinClass itin = NoItinerary>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
 
@@ -63,8 +63,8 @@ class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{19-16} = 0;
   let Inst{15-0}  = imm16;
 }
-class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
+class InstrRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern = [],
+         InstrItinClass itin = NoItinerary>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<4>  rb;
@@ -525,12 +525,11 @@ def jmptarget  : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
 }
 
-def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
-             "j\t$imm16", [(br bb:$imm16)], NoItinerary> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let isBarrier = 1;
-  let hasDelaySlot = 1;
+let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
+    def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
+             "j\t$imm16", [(br bb:$imm16)], NoItinerary>;
+
+    def JR : InstrR<0x2a, (outs), (ins Int32Regs:$ra), "jr\t$ra">;
 }
 
 /* 函数调用 */
@@ -570,6 +569,12 @@ def ADJCALLSTACKDOWN : AlexPseudo<(outs), (ins uimm16:$amt),
 def ADJCALLSTACKUP   : AlexPseudo<(outs), (ins uimm16:$amt1, uimm16:$amt2),
                                   "!ADJCALLSTACKUP $amt1",
                                   [(callseq_end timm:$amt1, timm:$amt2)]>;
+/* 系统指令 */
+def BIN : InstrRR<0x80, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "bin\t$ra, $rb">;
+def BOUT: InstrRR<0x81, (outs), (ins Int32Regs:$ra, Int32Regs:$rb),"bout\t$ra, $rb">;
+def HALT: InstrPlain<0, "halt"> {
+    let Inst = 0xFFFFFFFF;
+}
 
 // 模式匹配
 /* 16/32位整数加载的直接翻译 */
