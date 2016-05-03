@@ -102,9 +102,26 @@ bool AlexInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
     case Alex::CombineLoHiRI: {
         auto Dest = MI->getOperand(0).getReg();
         auto Src = MI->getOperand(1).getReg();          // lo
-        auto GlobalAddress = MI->getOperand(2).getGlobal(); // hi
+        //auto GlobalAddress = MI->getOperand(2).getGlobal(); // hi
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::ADDiu), Dest).addReg(Src).addImm(0);
-        BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::LIh), Dest).addGlobalAddress(GlobalAddress, 0, AlexII::MO_ABS_HI);
+        auto Operand2 = MI->getOperand(2);
+        switch (Operand2.getType()) {
+        case MachineOperand::MO_GlobalAddress:
+            BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::LIh), Dest)
+                    .addGlobalAddress(Operand2.getGlobal(), 0, AlexII::MO_ABS_HI);
+            break;
+        case MachineOperand::MO_BlockAddress:
+            BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::LIh), Dest)
+                    .addBlockAddress(Operand2.getBlockAddress(), 0, AlexII::MO_ABS_HI);
+            break;
+        case MachineOperand::MO_JumpTableIndex:
+            BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), get(Alex::LIh), Dest)
+                    .addJumpTableIndex(Operand2.getIndex(), AlexII::MO_ABS_HI);
+            break;
+        default:
+            llvm_unreachable("CombineLoHiRI unknown operand type");
+        }
+
         break;
     }
     }
@@ -227,7 +244,6 @@ bool AlexInstrInfo::lowerLoadExtendPseudo(MachineBasicBlock::iterator &MI) const
         auto srcReg = MI->getOperand(1).getReg();
         auto memOffset = MI->getOperand(2).getImm();
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LB), targetReg).addReg(srcReg).addImm(memOffset);
-        BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SHL), targetReg).addReg(targetReg).addImm(31);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::SAR), targetReg).addReg(targetReg).addImm(31);
         for (unsigned i = 0; i < MI->getNumOperands(); ++i) {
             printf("%d ", MI->getOperand(i).getType());

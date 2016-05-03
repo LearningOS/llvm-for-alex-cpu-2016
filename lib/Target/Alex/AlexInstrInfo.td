@@ -376,7 +376,7 @@ let isBranch=1, isTerminator=1, isBarrier=1, imm16=0, hasDelaySlot = 1,
     isIndirectBranch = 1 in
 class JumpFR<bits<8> op, string instr_asm, RegisterClass RC>:
   InstrRRI<op, (outs), (ins RC:$ra),
-     !strconcat(instr_asm, "\t$ra"), [(brind RC:$ra)], NoItinerary> {
+     !strconcat(instr_asm, "\t$ra"), [], NoItinerary> {
   let rb = 0;
   let imm16 = 0;
 }
@@ -412,9 +412,9 @@ def ADD     : ArithLogicRRR<0x01, "add",  add,  Int32Regs>;
 def SUB     : ArithLogicRRR<0x04, "sub",  sub,  Int32Regs>;
 def MUL     : ArithLogicRRR<0x07, "mul",  mul,  Int32Regs>;
 def DIV     : ArithLogicRRR<0x0a, "div",  sdiv, Int32Regs>;
-def DIVu    : ArithLogicRRR<0xff, "divu", udiv, Int32Regs>;
+def DIVu    : ArithLogicRRR<0x43, "divu", udiv, Int32Regs>;
 def MOD     : ArithLogicRRR<0x0d, "mod",  srem, Int32Regs>;
-def MODu    : ArithLogicRRR<0xff, "modu", urem, Int32Regs>;
+def MODu    : ArithLogicRRR<0x44, "modu", urem, Int32Regs>;
 
 def SHL     : ArithLogicRRR<0x10, "shl", shl, Int32Regs>;
 def SLR     : ArithLogicRRR<0x12, "slr", srl, Int32Regs>;
@@ -444,11 +444,11 @@ defm LH     : LoadM32<0x2e,  "lh",  zextloadi16_a>;
 // 下面的load都是伪指令了
 defm LHs    : LoadM32<0xff,  "lhs", sextloadi16, 1>;
 defm LHa    : LoadM32<0xff,  "lha", extloadi16, 1>;
-defm LBs    : LoadM32<0xfd,  "lbs", sextloadi8, 1>;
-defm LBa    : LoadM32<0xfd,  "lba", extloadi8, 1>;
-defm LBIT   : LoadM32<0xfd,  "lbit", zextloadi1, 1>;
-defm LBITs  : LoadM32<0xfd,  "lbits", sextloadi1, 1>;
-defm LBITa  : LoadM32<0xfd,  "lbita", extloadi1, 1>;
+defm LBs    : LoadM32<0xff,  "lbs", sextloadi8, 1>;
+defm LBa    : LoadM32<0xff,  "lba", extloadi8, 1>;
+defm LBIT   : LoadM32<0xff,  "lbit", zextloadi1, 1>;
+defm LBITs  : LoadM32<0xff,  "lbits", sextloadi1, 1>;
+defm LBITa  : LoadM32<0xff,  "lbita", extloadi1, 1>;
 
 /* Save */
 defm SW     : StoreM32<0x34, "sw",  store_a>;
@@ -472,21 +472,6 @@ def LI32    : AlexPseudo<(outs Int32Regs:$ra), (ins simm32:$imm), "li32",
 def CombineLoHiRI : AlexPseudo<(outs Int32Regs:$ra),
             (ins Int32Regs:$rb, simm16:$imm),
             "combine_lo_hi_ri\t$ra, $rb, $imm">;
-
-/* Global Address/Jump table */
-
-def : Pat<(AlexHi tjumptable:$in), (LIh tjumptable:$in)>;
-def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
-def : Pat<(add Int32Regs:$hi, (AlexLo tjumptable:$lo)),
-              (ADDiu Int32Regs:$hi, tjumptable:$lo)>;
-
-def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntUnaryOp>;
-class WrapperPat<SDNode node>:
-      Pat<(AlexWrapper node:$in),
-              (LI32 node:$in)>;
-
-def : WrapperPat<tglobaladdr>;
-def : WrapperPat<tjumptable>;
 
 /* 分支语句 */
 
@@ -533,8 +518,14 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
     def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
              "j\t$imm16", [(br bb:$imm16)], NoItinerary>;
 
-    def JR : InstrR<0x2a, (outs), (ins Int32Regs:$ra), "jr\t$ra">;
 }
+let isBranch=1, isTerminator=1, isBarrier=1, hasDelaySlot = 1,
+    isIndirectBranch = 1 in {
+    def JR : InstrR<0x2a, (outs), (ins Int32Regs:$ra), "jr\t$ra", []>;
+}
+
+def : Pat<(brind Int32Regs:$ra),
+          (JR Int32Regs:$ra)>;
 
 /* 函数调用 */
 def calltarget  : Operand<iPTR> {
@@ -591,10 +582,30 @@ def : Pat<(i32 immSExt32:$in),
           (LI32 imm:$in)>;
 
 /* Hi/Lo的加载的直接翻译 */
+/* Global Address/Jump table */
+
+def : Pat<(AlexHi tblockaddress:$in), (LIh tblockaddress:$in)>;
+def : Pat<(AlexLo tblockaddress:$in), (LI tblockaddress:$in)>;
+def : Pat<(add Int32Regs:$lo, (AlexHi tblockaddress:$hi)),
+          (CombineLoHiRI Int32Regs:$lo, tblockaddress:$hi)>;
+
+def : Pat<(AlexHi tjumptable:$in), (LIh tjumptable:$in)>;
+def : Pat<(AlexLo tjumptable:$in), (LI tjumptable:$in)>;
+def : Pat<(add Int32Regs:$lo, (AlexHi tjumptable:$hi)),
+          (CombineLoHiRI Int32Regs:$lo, tjumptable:$hi)>;
+
 def : Pat<(AlexHi tglobaladdr:$in), (LIh tglobaladdr:$in)>;
 def : Pat<(AlexLo tglobaladdr:$in), (LI tglobaladdr:$in)>;
 def : Pat<(add Int32Regs:$lo, (AlexHi tglobaladdr:$hi)),
           (CombineLoHiRI Int32Regs:$lo, tglobaladdr:$hi)>;
+
+def AlexWrapper    : SDNode<"AlexISD::Wrapper", SDTIntUnaryOp>;
+class WrapperPat<SDNode node>:
+      Pat<(AlexWrapper node:$in),
+              (LI32 node:$in)>;
+
+def : WrapperPat<tglobaladdr>;
+def : WrapperPat<tjumptable>;
 
 /* 普通有符号比较的分支指令的直接翻译 */
 def : Pat<(brcc SETLT, Int32Regs:$ra, Int32Regs:$rb, bb:$imm16),

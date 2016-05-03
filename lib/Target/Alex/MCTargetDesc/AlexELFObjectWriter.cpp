@@ -59,13 +59,6 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
         case Alex::fixup_Alex_32:
             Type = ELF::R_ALEX_32;
             break;
-        case Alex::fixup_Alex_GPREL16:
-            Type = ELF::R_ALEX_GPREL16;
-            break;
-        case Alex::fixup_Alex_GOT_Global:
-        case Alex::fixup_Alex_GOT_Local:
-            Type = ELF::R_ALEX_GOT16;
-            break;
         case Alex::fixup_Alex_HI16:
             Type = ELF::R_ALEX_HI16;
             break;
@@ -74,12 +67,6 @@ unsigned AlexELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target
             break;
         case Alex::fixup_Alex_PC16:
             Type = ELF::R_ALEX_PC16;
-            break;
-        case Alex::fixup_Alex_GOT_HI16:
-            Type = ELF::R_ALEX_GOT_HI16;
-            break;
-        case Alex::fixup_Alex_GOT_LO16:
-            Type = ELF::R_ALEX_GOT_LO16;
             break;
     }
 
@@ -96,28 +83,11 @@ AlexELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
     switch (Type) {
         default:
             return true;
-
-        case ELF::R_ALEX_GOT16:
-            // For Alex pic mode, I think it's OK to return true but I didn't confirm.
-            //  llvm_unreachable("Should have been handled already");
-            return true;
-
-            // These relocations might be paired with another relocation. The pairing is
-            // done by the static linker by matching the symbol. Since we only see one
-            // relocation at a time, we have to force them to relocate with a symbol to
-            // avoid ending up with a pair where one points to a section and another
-            // points to a symbol.
         case ELF::R_ALEX_HI16:
         case ELF::R_ALEX_LO16:
-            // R_ALEX_32 should be a relocation record, I don't know why Mips set it to 
-            // false.
         case ELF::R_ALEX_32:
             return true;
-
-        case ELF::R_ALEX_GPREL16:
-            return false;
     }
-    return true;
 }
 
 MCObjectWriter *llvm::createAlexELFObjectWriter(raw_pwrite_stream &OS,

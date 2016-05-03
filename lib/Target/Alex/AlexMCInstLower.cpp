@@ -111,15 +111,15 @@ MCOperand AlexMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
 }
 //@LowerSymbolOperand }
 
-static void CreateMCInst(MCInst& Inst, unsigned Opc, const MCOperand& Opnd0,
-                         const MCOperand& Opnd1,
-                         const MCOperand& Opnd2 = MCOperand()) {
-  Inst.setOpcode(Opc);
-  Inst.addOperand(Opnd0);
-  Inst.addOperand(Opnd1);
-  if (Opnd2.isValid())
-    Inst.addOperand(Opnd2);
-}
+//static void CreateMCInst(MCInst& Inst, unsigned Opc, const MCOperand& Opnd0,
+//                         const MCOperand& Opnd1,
+//                         const MCOperand& Opnd2 = MCOperand()) {
+//  Inst.setOpcode(Opc);
+//  Inst.addOperand(Opnd0);
+//  Inst.addOperand(Opnd1);
+//  if (Opnd2.isValid())
+//    Inst.addOperand(Opnd2);
+//}
 
 // Lower ".cpload $reg" to
 //  "lui   $gp, %hi(_gp_disp)"
@@ -188,19 +188,12 @@ MCOperand AlexMCInstLower::LowerOperand(const MachineOperand& MO,
     return MCOperand::createReg(MO.getReg());
   case MachineOperand::MO_Immediate:
     return MCOperand::createImm(MO.getImm() + offset);
-//#if CH >= CH8_1
+  
   case MachineOperand::MO_MachineBasicBlock:
-//#endif
-//#if CH >= CH9_1 //3
-//  case MachineOperand::MO_ExternalSymbol:
-//#endif
-//#if CH >= CH8_1
+  case MachineOperand::MO_ExternalSymbol:
   case MachineOperand::MO_JumpTableIndex:
   case MachineOperand::MO_BlockAddress:
-//#endif
-
   case MachineOperand::MO_GlobalAddress:
-//@1
     return LowerSymbolOperand(MO, MOTy, offset);
 
   case MachineOperand::MO_RegisterMask:

@@ -41,14 +41,13 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
 
     const AlexInstrInfo &TII =
             *static_cast<const AlexInstrInfo*>(subtarget->getInstrInfo());
-    const AlexRegisterInfo &RegInfo =
-            *static_cast<const AlexRegisterInfo *>(subtarget->getRegisterInfo());
+    //const AlexRegisterInfo &RegInfo =
+    //        *static_cast<const AlexRegisterInfo *>(subtarget->getRegisterInfo());
 
     MachineBasicBlock::iterator MBBI = MBB.begin();
     DebugLoc dl = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
     //Cpu0ABIInfo ABI = STI.getABI();
     unsigned SP = Alex::SP;
-    auto RC = &Alex::Int32RegsRegClass;
 
     // push $fp
     BuildMI(MBB, MBBI, dl, TII.get(Alex::ADDi), Alex::SP).addReg(Alex::SP).addImm(-4);
@@ -66,7 +65,7 @@ void AlexFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB
 
     MachineModuleInfo &MMI = MF.getMMI();
     const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
-    MachineLocation DstML, SrcML;
+    //MachineLocation DstML, SrcML;
 
     // Adjust stack.
     TII.adjustStackPtr(SP, -StackSize, MBB, MBBI);
@@ -109,8 +108,8 @@ void AlexFrameLowering::emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB
 
     const AlexInstrInfo &TII =
             *static_cast<const AlexInstrInfo *>(subtarget->getInstrInfo());
-    const AlexRegisterInfo &RegInfo =
-            *static_cast<const AlexRegisterInfo *>(subtarget->getRegisterInfo());
+    //const AlexRegisterInfo &RegInfo =
+    //        *static_cast<const AlexRegisterInfo *>(subtarget->getRegisterInfo());
 
     DebugLoc dl = MBBI->getDebugLoc();
     //Cpu0ABIInfo ABI = STI.getABI();

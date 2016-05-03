@@ -70,10 +70,10 @@ protected:
   const AlexTargetMachine *targetMachine;
   const AlexInstrInfo *instrInfo;
   const AlexFrameLowering *FrameLowering;
-  const AlexTargetLowering *targetLowering;
-  const AlexRegisterInfo *registerInfo;
-  const SelectionDAGTargetInfo *TSInfo;
   InstrItineraryData *instrItineraryData;
+  const SelectionDAGTargetInfo *TSInfo;
+  const AlexRegisterInfo *registerInfo;
+  const AlexTargetLowering *targetLowering;
 };
 
 class AlexTargetMachine : public LLVMTargetMachine {

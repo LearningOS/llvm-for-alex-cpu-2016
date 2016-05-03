@@ -65,15 +65,12 @@ AlexTargetLowering::AlexTargetLowering(const AlexTargetMachine *targetMachine,
 
     setOperationAction(ISD::SELECT_CC,         MVT::i32,   Expand);
     setOperationAction(ISD::SELECT_CC,         MVT::Other, Expand);
-    //setOperationAction(ISD::BR_CC,             MVT::Other, Expand);
-    //setOperationAction(ISD::BR_CC,             MVT::iAny, Expand);
 
     //setOperationAction(ISD::SELECT,            MVT::i32,   Expand);
     setOperationAction(ISD::VASTART,           MVT::Other, Custom);
     setOperationAction(ISD::GlobalAddress,     MVT::i32,   Custom);
     setOperationAction(ISD::BlockAddress,      MVT::i32,   Custom);
     setOperationAction(ISD::JumpTable,         MVT::i32,   Custom);
-    setOperationAction(ISD::JumpTable,         MVT::Other, Custom);
     setSelectIsExpensive(true);
 
     /* Unimplemented instructions */
@@ -123,27 +120,15 @@ SDValue AlexTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const
     return SDValue();
 }
 
-SDValue AlexTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const  {
-    MachineFunction &MF = DAG.getMachineFunction();
-    AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
+SDValue AlexTargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const {
+    //MachineFunction &MF = DAG.getMachineFunction();
+    //AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
 
     SDLoc DL = SDLoc(Op);
-    SDValue FI = DAG.getFrameIndex(FuncInfo->getVarArgsFrameIndex(),
-                                   getPointerTy(MF.getDataLayout()));
+    //SDValue FI = DAG.getFrameIndex(FuncInfo->getVarArgsFrameIndex(),
+     //                              getPointerTy(MF.getDataLayout()));
 
     return DAG.getConstant(0x1234, DL, MVT::i16);
-    //return DAG.getStore(Op.getOperand(0), DL, FI,
-    //             Op.getOperand(1), nullptr, false, false, 0);
-}
-
-SDValue AlexTargetLowering::lowerMulHS(SDValue Op, SelectionDAG &DAG) const  {
-    MachineFunction &MF = DAG.getMachineFunction();
-    AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
-
-    SDLoc DL = SDLoc(Op);
-
-
-    return DAG.getConstant(0, DL, MVT::i16);
 }
 
 SDValue AlexTargetLowering::lowerVASTART(SDValue Op, SelectionDAG &DAG) const {
@@ -184,7 +169,7 @@ void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
 
     // Record the frame index of the first variable argument
     // which is a value necessary to VASTART.
-    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset+8, true); /*8 Bytes for FP and Return address*/
     AlexFI->setVarArgsFrameIndex(FI);
 
     // Copy the integer registers that have not been used for argument passing
@@ -205,7 +190,7 @@ void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
 }
 
 SDValue AlexTargetLowering::getGlobalReg(SelectionDAG &DAG, EVT Ty) const {
-    AlexFunctionInfo *FI = DAG.getMachineFunction().getInfo<AlexFunctionInfo>();
+   // AlexFunctionInfo *FI = DAG.getMachineFunction().getInfo<AlexFunctionInfo>();
     return DAG.getRegister(Alex::GP, Ty);
 }
 
@@ -244,17 +229,9 @@ SDValue AlexTargetLowering::getAddrGlobal(NodeTy *N, EVT Ty, SelectionDAG &DAG,
                               getTargetNode(N, Ty, DAG, Flag), Chain /*??*/);
     //return DAG.getLoad(Ty, DL, Chain, Tgt, PtrInfo, false, false, false, 0);
 }
-SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op,
-                                               SelectionDAG &DAG) const {
-    //@lowerGlobalAddress }
-    SDLoc DL(Op);
-    const AlexTargetObjectFile *TLOF =
-            static_cast<const AlexTargetObjectFile *>(getTargetMachine().getObjFileLowering());
-    //@lga 1 {
+SDValue AlexTargetLowering::lowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const {
     EVT Ty = Op.getValueType();
     GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
-    const GlobalValue *GV = N->getGlobal();
-
     return getAddrNonPIC(N, Ty, DAG);
 }
 
@@ -297,7 +274,6 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
         CurArgIdx = Ins[i].OrigArgIndex;
         EVT ValVT = VA.getValVT();
         ISD::ArgFlagsTy Flags = Ins[i].Flags;
-        bool IsRegLoc = VA.isRegLoc();
 
         //@byval pass {
         if (Flags.isByVal()) {
@@ -564,7 +540,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
         SDValue Arg = OutVals[i];
         CCValAssign &VA = ArgLocs[i];
         MVT LocVT = VA.getLocVT();
-        ISD::ArgFlagsTy Flags = Outs[i].Flags;
+        //ISD::ArgFlagsTy Flags = Outs[i].Flags;
 
         // Promote the value if needed.
         switch (VA.getLocInfo()) {
@@ -663,16 +639,21 @@ analyzeCallOperands(const SmallVectorImpl<ISD::OutputArg> &Args,
         ISD::ArgFlagsTy ArgFlags = Args[I].Flags;
         bool R;
 
+
+
         if (ArgFlags.isByVal()) {
             handleByValArg(I, ArgVT, ArgVT, CCValAssign::Full, ArgFlags);
             continue;
         }
-
-        {
+        if (IsVarArg && !Args[I].IsFixed) {
+            R = CC_Alex(I, ArgVT, ArgVT, CCValAssign::Full, ArgFlags, CCInfo);
+        }
+        else {
             MVT RegVT = getRegVT(ArgVT, FuncArgs[Args[I].OrigArgIndex].Ty, CallNode,
                                  IsSoftFloat);
             R = FixedFn(I, ArgVT, RegVT, CCValAssign::Full, ArgFlags, CCInfo);
         }
+
 
         if (R) {
 #ifndef NDEBUG
@@ -693,11 +674,6 @@ AlexTargetLowering::passArgOnStack(SDValue StackPtr, unsigned Offset,
                                  getPointerTy(DAG.getDataLayout()),
                                  StackPtr,
                                  DAG.getIntPtrConstant(Offset, DL));
-//    auto AddSP = DAG.getCopyToReg(Chain, DL, Alex::SP, PtrOff);
-//
-//    auto NewSP = DAG.getCopyFromReg(AddSP, DL, Alex::SP, getPointerTy(DAG.getDataLayout()));
-//    return DAG.getStore(AddSP, DL, Arg, NewSP, MachinePointerInfo(), false,
-//                        false, 0);
     return DAG.getStore(Chain, DL, Arg, PtrOff, MachinePointerInfo(), false,
                         false, 0);
 }
@@ -796,6 +772,7 @@ lowerJumpTable(SDValue Op, SelectionDAG &DAG) const
     EVT Ty = Op.getValueType();
     return getAddrNonPIC(N, Ty, DAG);
 }
+
 SDValue AlexTargetLowering::getTargetNode(JumpTableSDNode *N, EVT Ty,
                                           SelectionDAG &DAG,
                                           unsigned Flag) const {

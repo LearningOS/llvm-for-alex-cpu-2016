@@ -69,12 +69,12 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
           << "stackSize  : " << stackSize << "\n");
 
     const std::vector<CalleeSavedInfo> &CSI = MFI->getCalleeSavedInfo();
-    int MinCSFI = 0;
-    int MaxCSFI = -1;
+    //int MinCSFI = 0;
+    //int MaxCSFI = -1;
 
     if (CSI.size()) {
-        MinCSFI = CSI[0].getFrameIdx();
-        MaxCSFI = CSI[CSI.size() - 1].getFrameIdx();
+        //MinCSFI = CSI[0].getFrameIdx();
+        //MaxCSFI = CSI[CSI.size() - 1].getFrameIdx();
     }
 
     // The following stack frame objects are always referenced relative to $sp:

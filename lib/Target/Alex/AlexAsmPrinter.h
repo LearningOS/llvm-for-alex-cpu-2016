@@ -27,18 +27,12 @@ namespace llvm {
   class AlexAsmPrinter;
 
   class LLVM_LIBRARY_VISIBILITY AlexAsmPrinter : public AsmPrinter {
+    const AlexSubtarget *subtarget;
     AlexMCInstLower MCInstLowering;
-    void EmitInstrWithMacroNoAT(const MachineInstr *MI);
-
   private:
-
     // lowerOperand - Convert a MachineOperand into the equivalent MCOperand.
     bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp);
-
   public:
-
-    const AlexSubtarget *subtarget;
-
     explicit AlexAsmPrinter(TargetMachine &targetMachine,
                             std::unique_ptr <MCStreamer> Streamer)
             : AsmPrinter(targetMachine, std::move(Streamer)),

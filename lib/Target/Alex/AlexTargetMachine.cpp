@@ -26,8 +26,8 @@ extern "C" void LLVMInitializeAlexTarget() {
 AlexSubtarget::AlexSubtarget(const Triple &TT, const std::string &CPU, const std::string &FS,
                     const AlexTargetMachine *_TM) :
               AlexGenSubtargetInfo(TT, CPU, FS),
-              targetMachine(_TM),
               targetTriple(TT),
+              targetMachine(_TM),
               instrInfo(new AlexInstrInfo(this)),
               FrameLowering(new AlexFrameLowering(this)),
               instrItineraryData(nullptr),
