@@ -159,3 +159,20 @@ bool AlexFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
 
     return true;
 }
+
+void AlexFrameLowering::
+eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB,
+                              MachineBasicBlock::iterator I) const {
+
+    unsigned SP = Alex::SP;
+
+    if (!hasReservedCallFrame(MF)) {
+        int64_t Amount = I->getOperand(0).getImm();
+        if (I->getOpcode() == Alex::ADJCALLSTACKDOWN)
+            Amount = -Amount;
+
+        subtarget->getInstrInfo()->adjustStackPtr(SP, Amount, MBB, I);
+    }
+
+    MBB.erase(I);
+}

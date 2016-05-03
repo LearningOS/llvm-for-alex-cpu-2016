@@ -523,18 +523,12 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     bool IsVarArg                         = CLI.IsVarArg;
 
     MachineFunction &MF = DAG.getMachineFunction();
-    //MachineFrameInfo *MFI = MF.getFrameInfo();
-    //const TargetFrameLowering *TFL = MF.getSubtarget().getFrameLowering();
-    AlexFunctionInfo *FuncInfo = MF.getInfo<AlexFunctionInfo>();
-    //bool IsPIC = false;//getTargetMachine().getRelocationModel() == Reloc::PIC_;
-    //AlexFunctionInfo *AlexFI = MF.getInfo<AlexFunctionInfo>();
+    const TargetFrameLowering *TFL = MF.getSubtarget().getFrameLowering();
 
     // Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ArgLocs;
     CCState CCInfo(CallConv, IsVarArg, DAG.getMachineFunction(),
                    ArgLocs, *DAG.getContext());
-    //AlexCC::SpecialCallingConvType SpecialCallingConv =
-   //         getSpecialCallingConv(Callee);
     AlexCC AlexCCInfo(CallConv, false,
                       CCInfo, AlexCC::SpecialCallingConvType::NoSpecialCallingConv);
 
@@ -548,8 +542,8 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     // Chain is the output chain of the last Load/Store or CopyToReg node.
     // ByValChain is the output chain of the last Memcpy node created for copying
     // byval arguments to the stack.
-    //unsigned StackAlignment = TFL->getStackAlignment();
-    //NextStackOffset = RoundUpToAlignment(NextStackOffset, StackAlignment);
+    unsigned StackAlignment = TFL->getStackAlignment();
+    NextStackOffset = alignTo(NextStackOffset, StackAlignment);
     SDValue NextStackOffsetVal = DAG.getIntPtrConstant(NextStackOffset, DL, true);
 
     Chain = DAG.getCALLSEQ_START(Chain, NextStackOffsetVal, DL);
@@ -561,7 +555,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     // With EABI is it possible to have 16 args on registers.
     std::deque< std::pair<unsigned, SDValue> > RegsToPass;
     SmallVector<SDValue, 8> MemOpChains;
-    AlexCC::byval_iterator ByValArg = AlexCCInfo.byval_begin();
+    //AlexCC::byval_iterator ByValArg = AlexCCInfo.byval_begin();
 
     //@1 {
     // Walk the register/memloc assignments, inserting copies/loads.
@@ -593,7 +587,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
         // emit ISD::STORE whichs stores the
         // parameter value to a stack Location
-        MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset() - 4,
+        MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset(),
                                              Chain, Arg, DL, false, DAG));
     }
 
@@ -699,10 +693,12 @@ AlexTargetLowering::passArgOnStack(SDValue StackPtr, unsigned Offset,
                                  getPointerTy(DAG.getDataLayout()),
                                  StackPtr,
                                  DAG.getIntPtrConstant(Offset, DL));
-    auto AddSP = DAG.getCopyToReg(Chain, DL, Alex::SP, PtrOff);
-
-    auto NewSP = DAG.getCopyFromReg(AddSP, DL, Alex::SP, getPointerTy(DAG.getDataLayout()));
-    return DAG.getStore(AddSP, DL, Arg, NewSP, MachinePointerInfo(), false,
+//    auto AddSP = DAG.getCopyToReg(Chain, DL, Alex::SP, PtrOff);
+//
+//    auto NewSP = DAG.getCopyFromReg(AddSP, DL, Alex::SP, getPointerTy(DAG.getDataLayout()));
+//    return DAG.getStore(AddSP, DL, Arg, NewSP, MachinePointerInfo(), false,
+//                        false, 0);
+    return DAG.getStore(Chain, DL, Arg, PtrOff, MachinePointerInfo(), false,
                         false, 0);
 }
 

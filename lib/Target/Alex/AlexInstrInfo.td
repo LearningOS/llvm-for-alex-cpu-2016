@@ -566,13 +566,14 @@ def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_AlexCallSeqStart,
                            [SDNPHasChain, SDNPOutGlue]>;
 def callseq_end   : SDNode<"ISD::CALLSEQ_END", SDT_AlexCallSeqEnd,
                            [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
-
-def ADJCALLSTACKDOWN : AlexPseudo<(outs), (ins uimm16:$amt),
-                                  "!ADJCALLSTACKDOWN $amt",
-                                  [(callseq_start timm:$amt)]>;
-def ADJCALLSTACKUP   : AlexPseudo<(outs), (ins uimm16:$amt1, uimm16:$amt2),
-                                  "!ADJCALLSTACKUP $amt1",
-                                  [(callseq_end timm:$amt1, timm:$amt2)]>;
+let Defs = [SP], Uses = [SP] in {
+    def ADJCALLSTACKDOWN : AlexPseudo<(outs), (ins uimm16:$amt),
+                                      "!ADJCALLSTACKDOWN $amt",
+                                      [(callseq_start timm:$amt)]>;
+    def ADJCALLSTACKUP   : AlexPseudo<(outs), (ins uimm16:$amt1, uimm16:$amt2),
+                                      "!ADJCALLSTACKUP $amt1",
+                                      [(callseq_end timm:$amt1, timm:$amt2)]>;
+}
 /* 系统指令 */
 def BIN : InstrRR<0x80, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "bin\t$ra, $rb">;
 def BOUT: InstrRR<0x81, (outs), (ins Int32Regs:$ra, Int32Regs:$rb),"bout\t$ra, $rb">;

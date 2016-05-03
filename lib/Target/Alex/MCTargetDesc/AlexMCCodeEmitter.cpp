@@ -105,6 +105,7 @@ getBranch16TargetOpValue(const MCInst &MI, unsigned OpNo,
     const MCExpr *Expr = MO.getExpr();
     Fixups.push_back(MCFixup::create(0, Expr,
                                      MCFixupKind(Alex::fixup_Alex_PC16)));
+    return 0;
 }
 
 /// getJumpTargetOpValue - Return binary encoding of the jump

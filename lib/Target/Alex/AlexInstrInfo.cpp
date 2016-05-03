@@ -17,7 +17,7 @@ class AlexSubtarget;
 #include "AlexGenInstrInfo.inc"
 
 AlexInstrInfo::AlexInstrInfo(const AlexSubtarget *subtarget)
-        :subtarget(subtarget) {
+        :subtarget(subtarget), AlexGenInstrInfo(Alex::ADJCALLSTACKDOWN, Alex::ADJCALLSTACKUP) {
 
 }
 
@@ -165,7 +165,7 @@ void AlexInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 bool AlexInstrInfo::lowerCallPseudo(MachineBasicBlock::iterator &MI) const {
     MachineBasicBlock &MBB = *MI->getParent();
     if (MI->getDesc().getOpcode() == Alex::CALLg) {
-        // 这里不用备份T0, 由于T0用于返回地址, 此处LLVM会标记T0为LiveIn
+        // 这里不用备份T0, 由于T0用于返回值, 此处LLVM会标记T0为LiveIn
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::LIh), Alex::T0).addGlobalAddress(MI->getOperand(0).getGlobal(), AlexII::MO_ABS_HI);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::ADDiu), Alex::T0).addReg(Alex::T0).addGlobalAddress(MI->getOperand(0).getGlobal(), AlexII::MO_ABS_LO);
         BuildMI(MBB, MI, MI->getDebugLoc(), get(Alex::CALL)).addReg(Alex::T0);
@@ -173,10 +173,10 @@ bool AlexInstrInfo::lowerCallPseudo(MachineBasicBlock::iterator &MI) const {
     else {
         // temporary restore t0, t1, t2 in case that it uses t0~t2 as call addr
         auto regOperandIndex = MI->getNumOperands();
-        for (unsigned i = 0; i < MI->getNumOperands(); ++i) {
+        for (int i = MI->getNumOperands() - 1; i >= 0; --i) {
             if (MI->getOperand(i).getType() == MachineOperand::MachineOperandType::MO_Register) {
                 // assert(regOperandIndex == MI->getNumOperands() && "call operation with multiple registers!");
-                regOperandIndex = i;
+                regOperandIndex = static_cast<unsigned>(i);
             }
         }
         assert((regOperandIndex != MI->getNumOperands()) &&
@@ -218,6 +218,7 @@ bool AlexInstrInfo::lowerLoadExtendPseudo(MachineBasicBlock::iterator &MI) const
             printf("%d ", MI->getOperand(i).getType());
         }
         printf("\n");
+        break;
     }
     case Alex::LBITa:
     case Alex::LBITs: {
@@ -232,6 +233,7 @@ bool AlexInstrInfo::lowerLoadExtendPseudo(MachineBasicBlock::iterator &MI) const
             printf("%d ", MI->getOperand(i).getType());
         }
         printf("\n");
+        break;
     }
     case Alex::LBIT: {
         printf("lhs ");

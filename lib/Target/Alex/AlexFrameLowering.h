@@ -27,6 +27,8 @@ namespace llvm {
                                     MachineBasicBlock::iterator MI,
                                     const std::vector<CalleeSavedInfo> &CSI,
                                     const TargetRegisterInfo *TRI) const override;
+    void eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB,
+                                          MachineBasicBlock::iterator I) const override;
   };
 } // End llvm namespace
 
