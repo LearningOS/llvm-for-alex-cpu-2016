@@ -103,8 +103,8 @@ class InstrRRR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{11-0}  = 0;
 }
 
-class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
+class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern = [],
+         InstrItinClass itin = NoItinerary>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<16> imm;
 
@@ -476,6 +476,7 @@ def brtarget16    : Operand<OtherVT> {
   let DecoderMethod = "DecodeBranch16Target";
 }
 let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
+def B   : InstrI<0x24, (outs), (ins brtarget16:$imm16), "b\t$imm16", [(br bb:$imm16)]>;
 def BNZ : InstrRI<0x26, (outs), (ins Int32Regs:$ra, brtarget16:$imm16),
           "bnz\t$ra, $imm16",
           [(brcond Int32Regs:$ra, bb:$imm16)], NoItinerary>;
@@ -503,11 +504,6 @@ def jmptarget  : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
 }
 
-let isBranch = 1, isTerminator = 1, isBarrier = 1, hasDelaySlot = 1 in {
-    def J : InstrI<0x29, (outs), (ins jmptarget:$imm16),
-             "j\t$imm16", [(br bb:$imm16)], NoItinerary>;
-
-}
 let isBranch=1, isTerminator=1, isBarrier=1, hasDelaySlot = 1,
     isIndirectBranch = 1 in {
     def JR : InstrR<0x2a, (outs), (ins Int32Regs:$ra), "jr\t$ra", []>;
