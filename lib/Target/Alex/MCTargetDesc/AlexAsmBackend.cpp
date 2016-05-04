@@ -77,11 +77,11 @@ void AlexAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
     // Number of bytes we need to fixup
     unsigned NumBytes = (getFixupKindInfo(Kind).TargetSize + 7) / 8;
     // Used to point to big endian bytes
-    unsigned FullSize;
+    //unsigned FullSize;
 
     switch ((unsigned)Kind) {
         default:
-            FullSize = 4;
+           // FullSize = 4;
             break;
     }
 

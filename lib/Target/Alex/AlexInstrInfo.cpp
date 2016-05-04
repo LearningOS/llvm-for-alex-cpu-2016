@@ -17,7 +17,8 @@ class AlexSubtarget;
 #include "AlexGenInstrInfo.inc"
 
 AlexInstrInfo::AlexInstrInfo(const AlexSubtarget *subtarget)
-        :subtarget(subtarget), AlexGenInstrInfo(Alex::ADJCALLSTACKDOWN, Alex::ADJCALLSTACKUP) {
+        :AlexGenInstrInfo(Alex::ADJCALLSTACKDOWN, Alex::ADJCALLSTACKUP),
+         subtarget(subtarget) {
 
 }
 

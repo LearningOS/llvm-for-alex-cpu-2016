@@ -70,12 +70,12 @@ encodeInstruction(const MCInst &MI, raw_ostream &OS,
     // Check for unimplemented opcodes.
     // Unfortunately in ALEX both NOT and SLL will come in with Binary == 0
     // so we have to special check for them.
-    unsigned Opcode = MI.getOpcode();
+   // unsigned Opcode = MI.getOpcode();
     //if ((Opcode != Alex::NOP) && (Opcode != Alex::SHL) && !Binary)
     //    llvm_unreachable("unimplemented opcode in encodeInstruction()");
 
-    const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
-    uint64_t TSFlags = Desc.TSFlags;
+    //const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
+    //uint64_t TSFlags = Desc.TSFlags;
 
     // Pseudo instructions don't get encoded and shouldn't be here
     // in the first place!

@@ -51,8 +51,8 @@ class InstrR<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern = [
   let Inst{23-20} = ra;
   let Inst{19-0} = 0;
 }
-class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
-         InstrItinClass itin>: AlexInst<outs, ins, asmstr, pattern, itin>
+class InstrRI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern = [],
+         InstrItinClass itin = NoItinerary>: AlexInst<outs, ins, asmstr, pattern, itin>
 {
   bits<4>  ra;
   bits<16> imm16;
@@ -113,6 +113,14 @@ class InstrI<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
   let Inst{23-16} = 0;
   let Inst{15-0} = imm;
 }
+
+class InstrSystem<bits<3> op1, bits<3> op2, dag outs, dag ins, string asmstr>
+    : AlexInst<outs, ins, asmstr, [], NoItinerary> {
+  let Opcode = 0xFF;
+  let Inst{23-21} = op1;
+  let Inst{20-18} = op2;
+}
+
 
 //===- AlexInstrInfo.td - Target Description for Alex Target -*- tablegen -*-=//
 //
@@ -371,25 +379,6 @@ multiclass StoreM32<bits<8> op, string instr_asm, PatFrag OpNode,
   def #NAME# : StoreM<op, instr_asm, OpNode, Int32Regs, mem, Pseudo>;
 }
 
-//@JumpFR {
-let isBranch=1, isTerminator=1, isBarrier=1, imm16=0, hasDelaySlot = 1,
-    isIndirectBranch = 1 in
-class JumpFR<bits<8> op, string instr_asm, RegisterClass RC>:
-  InstrRRI<op, (outs), (ins RC:$ra),
-     !strconcat(instr_asm, "\t$ra"), [], NoItinerary> {
-  let rb = 0;
-  let imm16 = 0;
-}
-//@JumpFR }
-
-// Return instruction
-class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
-  let isReturn = 1;
-  let isCodeGenOnly = 1;
-  let hasCtrlDep = 1;
-  let hasExtraSrcRegAllocReq = 1;
-}
-
 //===----------------------------------------------------------------------===//
 // Instruction definition
 //===----------------------------------------------------------------------===//
@@ -478,7 +467,7 @@ def CombineLoHiRI : AlexPseudo<(outs Int32Regs:$ra),
 /* Return Pseudo */
 let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
     def RetLR : AlexPseudo<(outs), (ins), "", [(AlexRet)]>;
-def RETB     : RetBase<Int32Regs>;
+//def RETB     : RetBase<Int32Regs>;
 def RET     : InstrPlain<0x2c, "ret", [], NoItinerary>;
 
 def brtarget16    : Operand<OtherVT> {
@@ -537,12 +526,9 @@ def AlexCallLink : SDNode<"AlexISD::JmpLink",SDT_AlexCallLink,
                           SDNPVariadic]>;
 /* 真正的函数调用指令(只能寄存器寻址) */
 let isCall=1, hasDelaySlot=1 in {
-  class CallLinkReg<bits<8> op, string instr_asm,
-                    RegisterClass RC>:
-    InstrR<op, (outs), (ins RC:$ra, variable_ops),
-       !strconcat(instr_asm, "\t$ra"), [], NoItinerary>;
+  def CALL :InstrR<0x2b, (outs), (ins Int32Regs:$ra, variable_ops),
+       "call\t$ra">;
 }
-def CALL    : CallLinkReg<0x2b, "call", Int32Regs>;
 
 let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in {
     def CALLg : AlexPseudo<(outs), (ins calltarget:$imm16), "",
@@ -551,6 +537,7 @@ let isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in {
                 [(AlexCallLink Int32Regs:$ra)]>;
 }
 
+/* 函数参数栈的创建和恢复 */
 def SDT_AlexCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>]>;
 def SDT_AlexCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>, SDTCisVT<1, i32>]>;
 def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_AlexCallSeqStart,
@@ -566,11 +553,20 @@ let Defs = [SP], Uses = [SP] in {
                                       [(callseq_end timm:$amt1, timm:$amt2)]>;
 }
 /* 系统指令 */
-def BIN : InstrRR<0x80, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "bin\t$ra, $rb">;
-def BOUT: InstrRR<0x81, (outs), (ins Int32Regs:$ra, Int32Regs:$rb),"bout\t$ra, $rb">;
-def HALT: InstrPlain<0, "halt"> {
-    let Inst = 0xFFFFFFFF;
-}
+def BIN :   InstrRR<0x80, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "bin\t$ra, $rb">;
+def BOUT:   InstrRR<0x81, (outs), (ins Int32Regs:$ra, Int32Regs:$rb),"bout\t$ra, $rb">;
+def CLI:    InstrSystem<0x1, 0x1, (outs Int32Regs:$rc), (ins), "cli\t$rc">;
+def STI:    InstrSystem<0x1, 0x2, (outs), (ins Int32Regs:$rc), "sti\t$rc">;
+def LUSP:   InstrSystem<0x2, 0x1, (outs Int32Regs:$rc), (ins), "lusp\t$rc">;
+def SUSP:   InstrSystem<0x2, 0x2, (outs), (ins Int32Regs:$rc), "susp\t$rc">;
+def IRET:   InstrSystem<0x3, 0x0, (outs), (ins), "iret">;
+def TRAP:   InstrSystem<0x6, 0x0, (outs), (ins), "trap">;
+def STIV:   InstrSystem<0x7, 0x0, (outs), (ins Int32Regs:$rc), "stiv\t$rc">;
+def STPD:   InstrSystem<0x7, 0x1, (outs), (ins Int32Regs:$rc), "stpd\t$rc">;
+def STPG:   InstrSystem<0x7, 0x2, (outs), (ins Int32Regs:$rc), "stpg\t$rc">;
+def STTO:   InstrSystem<0x7, 0x3, (outs), (ins Int32Regs:$rc), "stto\t$rc">;
+def LVAD:   InstrSystem<0x7, 0x4, (outs Int32Regs:$rc), (ins), "lvad\t$rc">;
+def HALT:   InstrPlain<0, "halt"> { let Inst = 0xFFFFFFFF; }
 
 // 模式匹配
 /* 16/32位整数加载的直接翻译 */
