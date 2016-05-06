@@ -19,12 +19,12 @@
             而且保存的寄存器有不必要的~~
         - ~~调用非函数指针函数时, 偏移不能超过16位~~
         - ~~不同长度整数转换~~
-        - 无符号整数被当成有符号(still exists?)
+        - ~~无符号整数被当成有符号(still exists?)~~
         - long long乘法, 目前只能高位是0
-        - 8位/1位整数符号扩展
+        - ~~8位/1位整数符号扩展~~
         - AlexInstrLowering.cpp有一些未翻译的LLVM IR
         - AlexInstrInfo::InsertBranch not implemented
-        - Function Epologue
+        - ~~Function Epologue~~
     - 编译器目标代码生成模块
         - 检查每条指令的二进制代码是否正确
         - ~~opcode > 7位的指令暂时生成错误~~
@@ -35,29 +35,36 @@
         - MULHS long long的乘法, 可以软件实现?
     - 不能处理的LLVM IR
         - ~~anyext (貌似可以用clang -O2消除掉这条指令)~~
-    - elf转换器, 提取elf中的符号信息
+    - ~~elf转换器, 提取elf中的符号信息~~
+        - ~~symbol address~~
+        - ~~line number~~
+        - frame info
 - 长期目标
     - 编译器
-        - 简化AlexMachine的指令集使其更像V9Cpu
         - 要变成伪指令的指令
             - ~~lbit, lbits~~
             - ~~lbs~~
             - ~~lhs~~
             - ~~sext_inreg~~
-                - 所有符号扩展指令用shl/sar实现
-            - lw/sw
-            - select
+                - ~~所有符号扩展指令用shl/sar实现~~
+            - ~~lw/sw~~
+            - ~~select~~
         - 系统指令
             - 获得pc
-            - 设置时钟中断
-    - 汇编器: 完成v0.1, 未测试
-    - 内联汇编: 完成v0.1, 未测试
+            - ~~设置时钟中断~~
+    - 汇编器: 完成v0.1
+        - ~~llvm-mc~~
+    - 内联汇编: 完成v0.1
+        - 测试
+            - ~~constraints: r, =r~~
+            - constraints: c
         - 可能的问题:
-            - 立即数长度
+            - ~~立即数长度~~
     - 连接器
         - ~~全局变量~~
         - ~~函数指针~~
         - ~~局部跳转~~
         - ~~DWARF调试信息生成(源码级调试)~~
-        - DWARF未测试
+        - ~~DWARF未测试~~
+        - ~~32bit data~~
 

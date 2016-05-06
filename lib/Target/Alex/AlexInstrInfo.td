@@ -444,6 +444,15 @@ defm SW     : StoreM32<0x34, "sw",  store_a>;
 defm SB     : StoreM32<0x36, "sb",  truncstorei8>;
 defm SH     : StoreM32<0x08, "sh",  truncstorei16_a>;
 
+/* PUSH/POP */
+def POPW    : InstrR<0x38, (outs Int32Regs:$ra), (ins), "popw\t$ra">;
+def POPH    : InstrR<0x39, (outs Int32Regs:$ra), (ins), "poph\t$ra">;
+def POPB    : InstrR<0x3a, (outs Int32Regs:$ra), (ins), "popb\t$ra">;
+def POPA    : InstrR<0x3b, (outs Int32Regs:$ra), (ins), "popa\t$ra">;
+def PUSHW   : InstrR<0x3c, (outs), (ins Int32Regs:$ra), "pushw\t$ra">;
+def PUSHH   : InstrR<0x3e, (outs), (ins Int32Regs:$ra), "pushh\t$ra">;
+def PUSHB   : InstrR<0x3f, (outs), (ins Int32Regs:$ra), "pushb\t$ra">;
+def PUSHA   : InstrR<0x41, (outs), (ins Int32Regs:$ra), "pusha\t$ra">;
 // lea伪指令
 defm LEAW   : LeaM32<0x02, "addi">;
 
@@ -551,17 +560,21 @@ let Defs = [SP], Uses = [SP] in {
 /* 系统指令 */
 def BIN :   InstrRR<0x80, (outs Int32Regs:$ra), (ins Int32Regs:$rb), "bin\t$ra, $rb">;
 def BOUT:   InstrRR<0x81, (outs), (ins Int32Regs:$ra, Int32Regs:$rb),"bout\t$ra, $rb">;
-def CLI:    InstrSystem<0x1, 0x1, (outs Int32Regs:$rc), (ins), "cli\t$rc">;
-def STI:    InstrSystem<0x1, 0x2, (outs), (ins Int32Regs:$rc), "sti\t$rc">;
-def LUSP:   InstrSystem<0x2, 0x1, (outs Int32Regs:$rc), (ins), "lusp\t$rc">;
-def SUSP:   InstrSystem<0x2, 0x2, (outs), (ins Int32Regs:$rc), "susp\t$rc">;
-def IRET:   InstrSystem<0x3, 0x0, (outs), (ins), "iret">;
-def TRAP:   InstrSystem<0x6, 0x0, (outs), (ins), "trap">;
-def STIV:   InstrSystem<0x7, 0x0, (outs), (ins Int32Regs:$rc), "stiv\t$rc">;
-def STPD:   InstrSystem<0x7, 0x1, (outs), (ins Int32Regs:$rc), "stpd\t$rc">;
-def STPG:   InstrSystem<0x7, 0x2, (outs), (ins Int32Regs:$rc), "stpg\t$rc">;
-def STTO:   InstrSystem<0x7, 0x3, (outs), (ins Int32Regs:$rc), "stto\t$rc">;
-def LVAD:   InstrSystem<0x7, 0x4, (outs Int32Regs:$rc), (ins), "lvad\t$rc">;
+def MFIV:   InstrR<0x82, (outs Int32Regs:$ra), (ins), "mfiv\t$ra">;
+def MTIV:   InstrR<0x83, (outs), (ins Int32Regs:$ra), "mtiv\t$ra">;
+def MFPT:   InstrR<0x84, (outs Int32Regs:$ra), (ins), "mfpt\t$ra">;
+def MTPT:   InstrR<0x85, (outs), (ins Int32Regs:$ra), "mtpt\t$ra">;
+def LFLG:   InstrR<0x86, (outs Int32Regs:$ra), (ins), "lflg\t$ra">;
+def STI:    InstrR<0x87, (outs), (ins Int32Regs:$rb), "sti\t$rb"> {
+    let ra = 2;
+}
+def STP:    InstrR<0x87, (outs), (ins Int32Regs:$rb), "stp\t$rb"> {
+    let ra = 1;
+}
+def LVAD:   InstrR<0x88, (outs Int32Regs:$ra), (ins), "lvad\t$ra">;
+def TIME:   InstrR<0x89, (outs), (ins Int32Regs:$ra), "time\t$ra">;
+def TRAP:   InstrR<0xF0, (outs), (ins Int32Regs:$ra), "trap\t$ra">;
+def IRET:   InstrPlain<0xF1, "iret">;
 def HALT:   InstrPlain<0, "halt"> { let Inst = 0xFFFFFFFF; }
 
 // 模式匹配
