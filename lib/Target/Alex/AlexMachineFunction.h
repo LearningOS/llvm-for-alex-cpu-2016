@@ -33,10 +33,10 @@ public:
 private:
   void printCustom(raw_ostream &O) const override;
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
   std::string Name;
   const GlobalValue *Val;
-#endif
+//#endif
 };
 
 //@1 {
