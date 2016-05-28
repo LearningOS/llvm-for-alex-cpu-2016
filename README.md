@@ -1,5 +1,8 @@
 # LLVM V9Cpu Backend
 
+## 设计文档
+[设计文档](alex-machine-docs/index.md)
+
 ### TODOs
 - 近期目标
     - 编译器
