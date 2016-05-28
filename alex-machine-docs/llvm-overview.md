@@ -83,3 +83,4 @@
     - 使用InstPrinter打印出SSA表示的汇编指令
     
 1. llvm tblgen介绍
+    参见[llvm-tblgen](llvm-tblgen.md)
