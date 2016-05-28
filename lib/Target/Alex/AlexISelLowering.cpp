@@ -482,7 +482,7 @@ SDValue AlexTargetLowering::LowerReturn(SDValue chain, CallingConv::ID CallConv,
     if (Flag.getNode())
         RetOps.push_back(Flag);
 
-    // Return on Alex is always a "ret $lr"
+    // Return on Alex is always a "ret"
     return dag.getNode(AlexISD::Ret, dl, MVT::Other, RetOps);
 }
 

@@ -64,10 +64,15 @@
 
 ## 2. 设计文档
 - 1. [LLVM总体介绍](llvm-intro.md)
-- 2. [自上而下的介绍](llvm-overview.md)
-- 3. [自下而上的介绍](llvm-details.md)
-- 4. [杂项](llvm-misc.md)
-- 5. [LLVM tblgen简介](llvm-tblgen.md)
-- 6. [LLVM IR简介](llvm-ir.md)
-- 7. [FAQ](llvm-faq.md)
-- 参考[Cpu0 LLVM后端](http://jonathan2251.github.io/lbd/index.html)
+- 1. [LLVM IR简介](llvm-ir.md)
+- 1. [自上而下的介绍](llvm-overview.md)
+- 1. [自下而上的介绍](llvm-details.md)
+- 1. [LLVM tblgen简介](llvm-tblgen.md)
+- 1. [lld连接器介绍](lld.md)
+- 1. [FAQ](llvm-faq.md)
+参考
+- [Cpu0 LLVM后端](http://jonathan2251.github.io/lbd/index.html)
+- [LLVM 指令集文档](http://llvm.org/docs/LangRef.html)
+- [LLVM tblgen文档](http://llvm.org/docs/TableGen/index.html)
+- [LLVM codegen](http://llvm.org/docs/CodeGenerator.html)
+- [LLVM MC Layer](http://llvm.org/docs/CodeGenerator.html#mc-layer)
