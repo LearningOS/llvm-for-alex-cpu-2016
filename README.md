@@ -3,6 +3,12 @@
 ## 设计文档
 [设计文档](alex-machine-docs/index.md)
 
+## 成员参与信息
+- 王奥丞
+    - llvm工具链
+    - nodejs版模拟器中调试器部分
+    - 通过elf生成v9 excuatble和网页版模拟器的调试符号文件的脚本
+
 ### TODOs
 - 近期目标
     - 编译器
