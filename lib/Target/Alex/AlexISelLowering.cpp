@@ -169,7 +169,7 @@ void AlexTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
 
     // Record the frame index of the first variable argument
     // which is a value necessary to VASTART.
-    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset+8, true); /*8 Bytes for FP and Return address*/
+    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset+8, true); /*8 Bytes for FP and Return address, HERE FrameIndex +8*/
     AlexFI->setVarArgsFrameIndex(FI);
 
     // Copy the integer registers that have not been used for argument passing
@@ -292,7 +292,7 @@ SDValue AlexTargetLowering::LowerFormalArguments(SDValue chain, CallingConv::ID 
 
         // The stack pointer offset is relative to the caller stack frame.
         int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8 /* Skip Saved frame pointer and return address */,
-                                        VA.getLocMemOffset() + 8, true);
+                                        VA.getLocMemOffset()+8, true); // HERE FrameIndex +8
 
         // Create load nodes to retrieve arguments from the stack
         SDValue FIN = dag.getFrameIndex(FI, getPointerTy(dag.getDataLayout()));
@@ -500,6 +500,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
     MachineFunction &MF = DAG.getMachineFunction();
     const TargetFrameLowering *TFL = MF.getSubtarget().getFrameLowering();
+    auto MFI = MF.getFrameInfo();
 
     // Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ArgLocs;
@@ -531,7 +532,7 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     // With EABI is it possible to have 16 args on registers.
     std::deque< std::pair<unsigned, SDValue> > RegsToPass;
     SmallVector<SDValue, 8> MemOpChains;
-    //AlexCC::byval_iterator ByValArg = AlexCCInfo.byval_begin();
+    AlexCC::byval_iterator ByValArg = AlexCCInfo.byval_begin();
 
     //@1 {
     // Walk the register/memloc assignments, inserting copies/loads.
@@ -540,7 +541,17 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
         SDValue Arg = OutVals[i];
         CCValAssign &VA = ArgLocs[i];
         MVT LocVT = VA.getLocVT();
-        //ISD::ArgFlagsTy Flags = Outs[i].Flags;
+        ISD::ArgFlagsTy Flags = Outs[i].Flags;
+
+        if (Flags.isByVal()) {
+            assert(Flags.getByValSize() &&
+                   "ByVal args of size 0 should have been ignored by front-end.");
+            assert(ByValArg != AlexCCInfo.byval_end());
+            passByValArg(Chain, DL, RegsToPass, MemOpChains, StackPtr, MFI, DAG, Arg,
+                         AlexCCInfo, *ByValArg, Flags, true);
+            ++ByValArg;
+            continue;
+        }
 
         // Promote the value if needed.
         switch (VA.getLocInfo()) {
@@ -619,6 +630,106 @@ SDValue AlexTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     // return.
     return LowerCallResult(Chain, InFlag, CallConv, IsVarArg,
                            Ins, DL, DAG, InVals, CLI.Callee.getNode(), CLI.RetTy);
+}
+
+void AlexTargetLowering::
+passByValArg(SDValue Chain, SDLoc DL,
+             std::deque< std::pair<unsigned, SDValue> > &RegsToPass,
+             SmallVectorImpl<SDValue> &MemOpChains, SDValue StackPtr,
+             MachineFrameInfo *MFI, SelectionDAG &DAG, SDValue Arg,
+             const AlexCC &CC, const ByValArgInfo &ByVal,
+             const ISD::ArgFlagsTy &Flags, bool isLittle) const {
+    unsigned ByValSizeInBytes = Flags.getByValSize();
+    unsigned OffsetInBytes = 0; // From beginning of struct
+    unsigned RegSizeInBytes = CC.regSize();
+    unsigned Alignment = std::min(Flags.getByValAlign(), RegSizeInBytes);
+    EVT PtrTy = getPointerTy(DAG.getDataLayout()),
+            RegTy = MVT::getIntegerVT(RegSizeInBytes * 8);
+
+    if (ByVal.NumRegs) {
+        const ArrayRef<MCPhysReg> ArgRegs = CC.intArgRegs();
+        bool LeftoverBytes = (ByVal.NumRegs * RegSizeInBytes > ByValSizeInBytes);
+        unsigned I = 0;
+
+        // Copy words to registers.
+        for (; I < ByVal.NumRegs - LeftoverBytes;
+               ++I, OffsetInBytes += RegSizeInBytes) {
+            SDValue LoadPtr = DAG.getNode(ISD::ADD, DL, PtrTy, Arg,
+                                          DAG.getConstant(OffsetInBytes, DL, PtrTy));
+            SDValue LoadVal = DAG.getLoad(RegTy, DL, Chain, LoadPtr,
+                                          MachinePointerInfo(), false, false, false,
+                                          Alignment);
+            MemOpChains.push_back(LoadVal.getValue(1));
+            unsigned ArgReg = ArgRegs[ByVal.FirstIdx + I];
+            RegsToPass.push_back(std::make_pair(ArgReg, LoadVal));
+        }
+
+        // Return if the struct has been fully copied.
+        if (ByValSizeInBytes == OffsetInBytes)
+            return;
+
+        // Copy the remainder of the byval argument with sub-word loads and shifts.
+        if (LeftoverBytes) {
+            assert((ByValSizeInBytes > OffsetInBytes) &&
+                   (ByValSizeInBytes < OffsetInBytes + RegSizeInBytes) &&
+                   "Size of the remainder should be smaller than RegSizeInBytes.");
+            SDValue Val;
+
+            for (unsigned LoadSizeInBytes = RegSizeInBytes / 2, TotalBytesLoaded = 0;
+                 OffsetInBytes < ByValSizeInBytes; LoadSizeInBytes /= 2) {
+                unsigned RemainingSizeInBytes = ByValSizeInBytes - OffsetInBytes;
+
+                if (RemainingSizeInBytes < LoadSizeInBytes)
+                    continue;
+
+                // Load subword.
+                SDValue LoadPtr = DAG.getNode(ISD::ADD, DL, PtrTy, Arg,
+                                              DAG.getConstant(OffsetInBytes, DL, PtrTy));
+                SDValue LoadVal = DAG.getExtLoad(
+                        ISD::ZEXTLOAD, DL, RegTy, Chain, LoadPtr, MachinePointerInfo(),
+                        MVT::getIntegerVT(LoadSizeInBytes * 8), false, false, false,
+                        Alignment);
+                MemOpChains.push_back(LoadVal.getValue(1));
+
+                // Shift the loaded value.
+                unsigned Shamt;
+
+                if (isLittle)
+                    Shamt = TotalBytesLoaded * 8;
+                else
+                    Shamt = (RegSizeInBytes - (TotalBytesLoaded + LoadSizeInBytes)) * 8;
+
+                SDValue Shift = DAG.getNode(ISD::SHL, DL, RegTy, LoadVal,
+                                            DAG.getConstant(Shamt, DL, MVT::i32));
+
+                if (Val.getNode())
+                    Val = DAG.getNode(ISD::OR, DL, RegTy, Val, Shift);
+                else
+                    Val = Shift;
+
+                OffsetInBytes += LoadSizeInBytes;
+                TotalBytesLoaded += LoadSizeInBytes;
+                Alignment = std::min(Alignment, LoadSizeInBytes);
+            }
+
+            unsigned ArgReg = ArgRegs[ByVal.FirstIdx + I];
+            RegsToPass.push_back(std::make_pair(ArgReg, Val));
+            return;
+        }
+    }
+
+    // Copy remainder of byval arg to it with memcpy.
+    unsigned MemCpySize = ByValSizeInBytes - OffsetInBytes;
+    SDValue Src = DAG.getNode(ISD::ADD, DL, PtrTy, Arg,
+                              DAG.getConstant(OffsetInBytes, DL, PtrTy));
+    SDValue Dst = DAG.getNode(ISD::ADD, DL, PtrTy, StackPtr,
+                              DAG.getIntPtrConstant(ByVal.Address, DL));
+    Chain = DAG.getMemcpy(Chain, DL, Dst, Src,
+                          DAG.getConstant(MemCpySize, DL, PtrTy),
+                          Alignment, /*isVolatile=*/false, /*AlwaysInline=*/false,
+            /*isTailCall=*/false,
+                          MachinePointerInfo(), MachinePointerInfo());
+    MemOpChains.push_back(Chain);
 }
 
 void AlexTargetLowering::AlexCC::
@@ -794,7 +905,7 @@ void AlexTargetLowering::copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDVa
         FrameObjOffset = (int)CC.reservedArgArea() -
                          (int)((CC.numIntArgRegs() - ByVal.FirstIdx) * CC.regSize());
     else
-        FrameObjOffset = ByVal.Address;
+        FrameObjOffset = 8 + ByVal.Address; // FrameIndex 8 is for RA and SP
 
     // Create frame object.
     EVT PtrTy = getPointerTy(DAG.getDataLayout());

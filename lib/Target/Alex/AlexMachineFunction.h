@@ -49,6 +49,7 @@ public:
   ~AlexFunctionInfo();
 
 
+
   int getVarArgsFrameIndex() const { return VarArgsFrameIndex; }
 
   void setVarArgsFrameIndex(int Index) { VarArgsFrameIndex = Index; }
@@ -69,10 +70,14 @@ public:
   MachinePointerInfo callPtrInfo(const GlobalValue *Val);
 
   unsigned getIncomingArgSize() const { return IncomingArgSize; }
-
+  bool isDynAllocFI(int FI) const { return DynAllocFI && DynAllocFI == FI; }
+  bool isOutArgFI(int FI) const {
+    return FI <= OutArgFIRange.first && FI >= OutArgFIRange.second;
+  }
 private:
   virtual void anchor();
 
+  std::pair<int, int> InArgFIRange, OutArgFIRange;
   bool HasByvalArg;
   unsigned IncomingArgSize;
 
@@ -89,6 +94,7 @@ private:
   ValueMap<const GlobalValue *, std::unique_ptr<const AlexCallEntry>>
           GlobalCallEntries;
 
+  mutable int DynAllocFI;
 };
 //@1 }
 

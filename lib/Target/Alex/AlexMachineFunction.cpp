@@ -52,7 +52,7 @@ AlexCallEntry::AlexCallEntry(const GlobalValue *V) :PseudoSourceValue(GlobalValu
 
 AlexFunctionInfo::AlexFunctionInfo(MachineFunction& MF)
         : MF(MF),  SRetReturnReg(0),
-          VarArgsFrameIndex(0),
+          VarArgsFrameIndex(0), DynAllocFI(0), OutArgFIRange(std::make_pair(-1, 0)),
           MaxCallFrameSize(0) {}
 AlexFunctionInfo::~AlexFunctionInfo() {}
 

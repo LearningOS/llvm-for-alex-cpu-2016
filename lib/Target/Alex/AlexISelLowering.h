@@ -198,7 +198,12 @@ private:
 
   SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
                     SmallVectorImpl<SDValue> &InVals) const override;
-
+  void passByValArg(SDValue Chain, SDLoc DL,
+                    std::deque< std::pair<unsigned, SDValue> > &RegsToPass,
+                    SmallVectorImpl<SDValue> &MemOpChains, SDValue StackPtr,
+                    MachineFrameInfo *MFI, SelectionDAG &DAG, SDValue Arg,
+                    const AlexCC &CC, const ByValArgInfo &ByVal,
+                    const ISD::ArgFlagsTy &Flags, bool isLittle) const;
   void copyByValRegs(SDValue Chain, SDLoc DL, std::vector<SDValue> &OutChains,
                      SelectionDAG &DAG, const ISD::ArgFlagsTy &Flags,
                      SmallVectorImpl<SDValue> &InVals, const Argument *FuncArg,
